@@ -1,0 +1,899 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>生菜智慧栽培 AIoT 專家系統 - 概念 UI v1</title>
+  <style>
+    :root {
+      --bg: #06111f;
+      --panel: #0b2133;
+      --panel2: #071827;
+      --line: #1e89c5;
+      --line-soft: #235f86;
+      --text: #edfaff;
+      --muted: #b8d5e2;
+      --cyan: #55dcff;
+      --green: #35e67d;
+      --yellow: #ffd166;
+      --red: #ff5b7a;
+      --leaf: #87d957;
+      --water: #45c7f4;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 16% 0%, rgba(85, 220, 255, .14), transparent 28%),
+        linear-gradient(180deg, #06111f 0%, #071827 100%);
+      font-family: "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif;
+    }
+    body.splitConcept #deviceBtn { display: none; }
+    body.mobilePreview { background: linear-gradient(90deg, #040b13, #071827, #040b13); }
+    button { font: inherit; color: inherit; }
+    .shell { width: min(1440px, 100%); margin: 0 auto; padding: 16px 18px 24px; }
+    body.mobilePreview .shell {
+      width: min(430px, calc(100% - 24px));
+      min-height: calc(100vh - 24px);
+      margin: 12px auto;
+      padding: 12px 12px 86px;
+      border: 1px solid rgba(85, 220, 255, .38);
+      border-radius: 24px;
+      background: #07111f;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, .42);
+      overflow: hidden;
+    }
+    .top {
+      display: grid;
+      grid-template-columns: 230px minmax(420px, 1fr) 360px;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .brand { font-size: 27px; font-weight: 900; }
+    .title {
+      justify-self: center;
+      width: min(760px, 100%);
+      border: 2px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 18px;
+      color: #f4fdff;
+      text-align: center;
+      font-size: 24px;
+      font-weight: 900;
+      background: rgba(16, 43, 60, .6);
+    }
+    .meta { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+    .pill, .seg button, .toolButton, .tab, .mobileTab {
+      min-height: 34px;
+      border: 1px solid var(--line-soft);
+      border-radius: 999px;
+      padding: 6px 12px;
+      color: var(--muted);
+      background: #102c43;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .toolButton, .seg button, .tab, .mobileTab { cursor: pointer; }
+    .toolButton.active, .seg button.active, .tab.active, .mobileTab.active {
+      color: #fff;
+      border-color: var(--green);
+      background: #103d2a;
+    }
+    .seg button.placeholder {
+      opacity: .72;
+      border-style: dashed;
+      cursor: default;
+    }
+    .seg .settingsShortcut {
+      color: #fff;
+      border-color: var(--green);
+      background: #103d2a;
+      box-shadow: 0 0 0 1px rgba(53, 230, 125, .18), 0 0 20px rgba(53, 230, 125, .14);
+    }
+    .seg {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px;
+      margin-bottom: 14px;
+      border: 1px solid var(--line-soft);
+      border-radius: 10px;
+      background: rgba(11, 33, 51, .82);
+      overflow: visible;
+    }
+    .viewSeg {
+      flex: 0 0 auto;
+      margin-bottom: 0;
+      padding: 4px;
+      overflow: visible;
+      white-space: nowrap;
+    }
+    .viewSeg button {
+      min-height: 34px;
+      padding: 6px 13px;
+    }
+    .grid { display: grid; gap: 14px; }
+    .overview { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .main { grid-template-columns: minmax(0, 1.65fr) minmax(340px, .75fr); align-items: start; }
+    .panel, .card {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(11, 33, 51, .95);
+      overflow: hidden;
+    }
+    .card { padding: 14px; display: grid; gap: 12px; }
+    .panelHead {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 13px 15px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .panelBody { padding: 14px 15px; }
+    h1, h2, h3, p { margin: 0; }
+    h2, h3 { color: #8de6ff; letter-spacing: 0; }
+    .muted { color: var(--muted); font-size: 14px; line-height: 1.45; }
+    .indexCard .head, .paramCard .head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .indexName { display: grid; gap: 4px; }
+    .indexName strong { color: #8de6ff; font-size: 21px; }
+    .light {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      width: fit-content;
+      min-height: 30px;
+      border: 1px solid var(--line-soft);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 13px;
+      font-weight: 900;
+    }
+    .dot { width: 13px; height: 13px; border-radius: 50%; display: inline-block; background: var(--green); }
+    .green { border-color: var(--green); background: rgba(16, 61, 42, .82); }
+    .yellow { border-color: var(--yellow); background: rgba(66, 56, 27, .88); }
+    .red { border-color: var(--red); background: rgba(61, 20, 34, .88); }
+    .yellow .dot { background: var(--yellow); }
+    .red .dot { background: var(--red); }
+    .scoreRow { display: grid; grid-template-columns: 94px minmax(0, 1fr); gap: 14px; align-items: center; }
+    .ring {
+      --pct: 88%;
+      --ring: var(--green);
+      width: 94px;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      position: relative;
+      background: conic-gradient(var(--ring) var(--pct), rgba(25, 77, 105, .95) 0);
+    }
+    .ring::after {
+      content: "";
+      position: absolute;
+      inset: 16px;
+      border-radius: 50%;
+      background: var(--panel);
+      border: 1px solid rgba(141, 230, 255, .48);
+    }
+    .ring b { position: relative; z-index: 1; font-size: 30px; line-height: 1; }
+    .ring.yellowRing { --ring: var(--yellow); }
+    .ring.redRing { --ring: var(--red); }
+    .ratio { display: grid; gap: 7px; }
+    .ratioWrap {
+      display: grid;
+      grid-template-columns: 54px minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+    }
+    .ratioPie {
+      width: 54px;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 1px solid var(--line-soft);
+      background: conic-gradient(
+        var(--green) 0deg var(--green-deg),
+        var(--yellow) var(--green-deg) var(--yellow-deg),
+        var(--red) var(--yellow-deg) 360deg
+      );
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.12), 0 10px 20px rgba(0,0,0,.18);
+    }
+    .ratioText {
+      min-width: 0;
+      display: grid;
+      gap: 4px;
+    }
+    .paramGrid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .paramCard {
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+      background: var(--panel2);
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+    }
+    .paramValue { font-size: 27px; font-weight: 900; color: #fff; line-height: 1; }
+    .chartGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .chart {
+      width: 100%;
+      height: 230px;
+      display: block;
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      background: var(--panel2);
+    }
+    .scene {
+      width: min(640px, 100%);
+      height: 300px;
+      min-height: 300px;
+      margin: 0 auto;
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      background: #04111e;
+      position: relative;
+      overflow: hidden;
+    }
+    .scanVideo {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: .96;
+      filter: saturate(1.08) contrast(1.04);
+    }
+    .scanVideoFill {
+      object-fit: cover;
+      opacity: .38;
+      filter: blur(24px) saturate(1.16) contrast(1.05);
+      transform: scale(1.08);
+    }
+    .scanVideoMain {
+      object-fit: contain;
+      z-index: 1;
+      filter: saturate(1.08) contrast(1.04)
+        drop-shadow(0 0 24px rgba(69, 199, 244, .16));
+    }
+    .scene::after {
+      content: "";
+      position: absolute;
+      z-index: 1;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 50%, transparent 55%, rgba(4, 17, 30, .28) 76%, rgba(4, 17, 30, .58) 100%),
+        linear-gradient(90deg, rgba(4, 17, 30, .28), transparent 24%, transparent 76%, rgba(4, 17, 30, .28));
+    }
+    .node {
+      position: absolute;
+      z-index: 2;
+      display: grid;
+      gap: 3px;
+      min-width: 106px;
+      border: 1px solid rgba(85, 220, 255, .52);
+      border-radius: 8px;
+      padding: 7px 8px;
+      color: var(--muted);
+      background: rgba(11, 33, 51, .76);
+      backdrop-filter: blur(7px);
+      font-size: 12px;
+    }
+    .node strong { color: #fff; font-size: 15px; }
+    .n1 { left: 16px; top: 16px; }
+    .n2 { right: 16px; top: 16px; }
+    .n3 { left: 16px; bottom: 18px; }
+    .n4 { left: 156px; bottom: 18px; }
+    .n5 { right: 16px; bottom: 18px; }
+    .sideList { display: grid; gap: 10px; }
+    .trendToolbar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .trendSelectorGrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+    .trendSelectorGrid .trendToolbar { margin-bottom: 0; }
+    .trendToolbar label { color: var(--muted); font-weight: 800; }
+    .trendToolbar select {
+      min-height: 36px;
+      border: 1px solid var(--line-soft);
+      border-radius: 999px;
+      padding: 6px 14px;
+      color: var(--text);
+      background: #102c43;
+      font: inherit;
+      font-weight: 800;
+    }
+    .item {
+      display: grid;
+      gap: 4px;
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      background: var(--panel2);
+      padding: 10px;
+    }
+    .item strong { color: #fff; }
+    .deviceRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; border: 1px solid var(--line-soft); border-radius: 8px; padding: 10px; background: var(--panel2); }
+    .deviceRow.on { border-color: var(--green); background: #0f3a2b; }
+    .ruleGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .ruleCard { display: grid; gap: 6px; border: 1px solid var(--line-soft); border-radius: 8px; padding: 12px; background: var(--panel2); }
+    .ruleCard.warn { border-color: var(--yellow); background: #332b18; }
+    .ruleCard strong { color: #fff; }
+    .hidden { display: none !important; }
+    .mobileTabs { display: none; }
+    body.mobilePreview [data-mobile-panel] { display: none; }
+    body.mobilePreview [data-mobile-panel].mobileActive { display: grid; }
+    body.mobilePreview .panel.mobileActive { display: block; }
+    body.mobilePreview .mobileTabs {
+      position: fixed;
+      left: 50%;
+      bottom: 12px;
+      z-index: 20;
+      width: min(430px, calc(100% - 24px));
+      transform: translateX(-50%);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      padding: 8px;
+      border: 1px solid rgba(85, 220, 255, .36);
+      border-radius: 18px;
+      background: rgba(7, 17, 31, .96);
+      box-shadow: 0 16px 42px rgba(0, 0, 0, .42);
+      backdrop-filter: blur(12px);
+    }
+    .mobileTab { min-height: 46px; border-radius: 12px; font-size: 13px; padding: 4px; }
+    body.mobilePreview .top,
+    body.mobilePreview .overview,
+    body.mobilePreview .main,
+    body.mobilePreview .chartGrid,
+    body.mobilePreview .trendSelectorGrid,
+    body.mobilePreview .ruleGrid { grid-template-columns: 1fr; }
+    body.mobilePreview .top { gap: 10px; }
+    body.mobilePreview .brand { font-size: 21px; }
+    body.mobilePreview .title { font-size: 18px; padding: 9px 12px; }
+    body.mobilePreview .meta { justify-content: flex-start; }
+    body.mobilePreview .paramGrid { grid-template-columns: 1fr; }
+    body.mobilePreview .scoreRow { grid-template-columns: 82px 1fr; }
+    body.mobilePreview .ring { width: 82px; }
+    body.mobilePreview .ring b { font-size: 25px; }
+    body.mobilePreview .ratioWrap { grid-template-columns: 48px minmax(0, 1fr); }
+    body.mobilePreview .ratioPie { width: 48px; }
+    body.mobilePreview .scene { height: auto; min-height: 420px; aspect-ratio: 9 / 16; }
+    body.mobilePreview .node { min-width: 96px; font-size: 12px; padding: 7px; }
+    body.mobilePreview .node strong { font-size: 14px; }
+    body.mobilePreview .n4 { left: 116px; }
+    @media (max-width: 1120px) {
+      .top, .overview, .main, .chartGrid, .trendSelectorGrid, .ruleGrid { grid-template-columns: 1fr; }
+      .paramGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .meta { justify-content: flex-start; }
+      .scene { height: auto; min-height: 420px; aspect-ratio: 16 / 9; }
+    }
+    @media (max-width: 640px) {
+      .shell { padding: 12px; }
+      .title { font-size: 19px; }
+      .brand { font-size: 22px; }
+      .paramGrid { grid-template-columns: 1fr; }
+      .scene { height: auto; min-height: 390px; aspect-ratio: 9 / 16; }
+    }
+  </style>
+</head>
+<body class="splitConcept">
+  <main class="shell">
+    <header class="top">
+      <div class="brand">JNC Bio-AIoT</div>
+      <h1 class="title" id="title"></h1>
+      <div class="meta">
+        <button class="toolButton" id="langBtn" type="button"></button>
+        <button class="toolButton" id="deviceBtn" type="button"></button>
+        <span class="pill" id="zonePill"></span>
+        <span class="pill" id="cropPill"></span>
+        <span class="pill" id="dapPill"></span>
+      </div>
+    </header>
+
+    <nav class="seg" aria-label="crop and page mode">
+      <button class="settingsShortcut" id="settingsBtn" type="button"></button>
+      <button class="active" type="button" data-crop="lettuce"></button>
+      <button type="button" data-crop="kale"></button>
+      <button class="placeholder" type="button" aria-disabled="true">芝麻葉</button>
+      <button class="placeholder" type="button" aria-disabled="true">奶油白菜</button>
+      <button class="placeholder" type="button" aria-disabled="true">菠菜</button>
+    </nav>
+
+    <section class="grid overview mobileActive" id="indices" data-mobile-panel="indices"></section>
+
+    <section class="panel" style="margin-top:14px;" data-mobile-panel="params">
+      <div class="panelHead">
+        <h2 id="paramTitle"></h2>
+        <span class="pill" id="thresholdPill"></span>
+      </div>
+      <div class="panelBody">
+        <div class="grid paramGrid" id="params"></div>
+      </div>
+    </section>
+
+    <section class="grid main" style="margin-top:14px;" data-mobile-panel="livePanel">
+      <article class="panel">
+        <div class="panelHead">
+          <h2 id="sceneTitle"></h2>
+          <div class="seg viewSeg" aria-label="live and trend view">
+            <button class="active" type="button" data-view="live"></button>
+            <button type="button" data-view="trend"></button>
+          </div>
+        </div>
+        <div class="panelBody" id="liveView">
+          <div class="scene" id="scene">
+            <video class="scanVideo scanVideoFill" id="scanVideoFill" autoplay muted loop playsinline preload="metadata" aria-hidden="true"></video>
+            <video class="scanVideo scanVideoMain" id="scanVideo" autoplay muted loop playsinline preload="metadata"></video>
+            <div class="node n1"><span>VPD / RH</span><strong id="vpdNode"></strong></div>
+            <div class="node n2"><span>CO2</span><strong id="co2Node"></strong></div>
+            <div class="node n3"><span>EC</span><strong id="ecNode"></strong></div>
+            <div class="node n4"><span>pH</span><strong id="phNode"></strong></div>
+            <div class="node n5"><span id="waterNodeLabel"></span><strong id="waterNode"></strong></div>
+          </div>
+        </div>
+        <div class="panelBody hidden" id="trendView">
+          <div class="trendSelectorGrid">
+            <div class="trendToolbar">
+              <label for="paramTrendSelect" id="paramTrendLabel"></label>
+              <select id="paramTrendSelect">
+                <option value="EC">EC</option>
+                <option value="pH">pH</option>
+                <option value="DO">DO</option>
+                <option value="VPD">VPD</option>
+                <option value="DLI">DLI</option>
+              </select>
+            </div>
+            <div class="trendToolbar">
+              <label for="indexTrendSelect" id="indexTrendLabel"></label>
+              <select id="indexTrendSelect">
+                <option value="RHI">RHI</option>
+                <option value="PMI">PMI</option>
+                <option value="DLI-CR">DLI-CR</option>
+                <option value="LGI">LGI</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid chartGrid">
+            <canvas class="chart" data-chart="param"></canvas>
+            <canvas class="chart" data-chart="index"></canvas>
+          </div>
+        </div>
+      </article>
+      <aside class="panel">
+        <div class="panelHead"><h2 id="alertTitle"></h2><span class="light yellow"><i class="dot"></i><span id="alertCount"></span></span></div>
+        <div class="panelBody sideList" id="alerts"></div>
+      </aside>
+    </section>
+
+    <section class="panel" style="margin-top:14px;" data-mobile-panel="rules">
+      <div class="panelHead"><h2 id="rulesTitle"></h2><span class="pill" id="rulesPill"></span></div>
+      <div class="panelBody grid ruleGrid" id="rules"></div>
+    </section>
+
+    <nav class="mobileTabs">
+      <button class="mobileTab active" type="button" data-mobile-tab="indices"></button>
+      <button class="mobileTab" type="button" data-mobile-tab="params"></button>
+      <button class="mobileTab" type="button" data-mobile-tab="livePanel"></button>
+      <button class="mobileTab" type="button" data-mobile-tab="rules"></button>
+    </nav>
+  </main>
+
+  <script>
+    (function () {
+      var lang = "zh";
+      var cropKey = "lettuce";
+      var view = "live";
+      var mobilePanel = "indices";
+      var selectedParamTrend = "EC";
+      var selectedIndexTrend = "RHI";
+      var i18n = {
+        zh: {
+          title: "專家系統｜水耕蔬菜",
+          lang: "English",
+          mobile: "手機 UI",
+          desktop: "桌機 UI",
+          settings: "回設定",
+          lettuce: "萵苣",
+          kale: "羽衣甘藍",
+          lettuceMode: "萵苣",
+          kaleMode: "羽衣甘藍",
+          live: "即時",
+          trend: "趨勢",
+          indexTrend: "整合指標",
+          zone: "生長區 A",
+          stage: "生長期",
+          paramTitle: "參數即時讀值",
+          threshold: "客戶自訂門檻：EC / VPD 已啟用",
+          sceneTitle: "栽培區即時狀態",
+          alertTitle: "警報與控制請求",
+          rulesTitle: "專家規則摘要",
+          rulesPill: "主畫面只顯示結論",
+          waterNode: "水溫 / DO",
+          green: "綠燈",
+          yellow: "黃燈",
+          red: "紅燈",
+          statusIdeal: "理想狀態",
+          statusWarning: "警戒狀態",
+          statusDanger: "危險狀態",
+          ratio24h: "24小時占比：",
+          ratioLights: "綠/黃/紅",
+          rhiSub: "根域環境指數",
+          pmiSub: "光合微氣候指數",
+          dliSub: "日累積光照達標率",
+          lgiSub: "葉菜生長指數",
+          ok: "穩定",
+          warn: "注意",
+          ecAdvice: "EC 穩定，維持目前養液濃度",
+          phAdvice: "pH 穩定，暫不需酸鹼修正",
+          doAdvice: "溶氧充足，維持循環與曝氣",
+          vpdAdvice: "VPD 略低，注意冠層蒸散",
+          dliAdvice: "今日光量接近目標，持續追蹤",
+          rhiAdvice: "根域吸收條件穩定",
+          pmiAdvice: "濕度偏高，優先維持空氣流動",
+          dliWarn: "預估日終略低，建議小幅補光",
+          lgiOk: "影像健康度良好，生長符合階段",
+          alertDli: "建立 LED PWM 控制請求，需確認熱負荷。",
+          alertTipburn: "VPD 偏高但影像未偵測心葉異常，安排追蹤。",
+          alertKale: "捲曲度略低但 DLI 已達標，不增加 LED。",
+          fan: "循環風扇",
+          fog: "微霧",
+          led: "LED 補光",
+          rule1: "DLI 預估不足",
+          rule2: "根域環境穩定",
+          rule3: "影像資料有效",
+          rule1Text: "補光前先檢查 VPD 與溫度。",
+          rule2Text: "EC、pH、DO、水溫皆在可接受狀態。",
+          rule3Text: "最新影像可信度 0.91，資料品質正常。",
+          tabIndex: "指標",
+          tabParam: "參數",
+          tabLive: "現況",
+          tabRules: "規則",
+          ideal: "理想",
+          realtime: "即時",
+          forecast: "預測"
+        },
+        en: {
+          title: "Expert System | Hydroponic Vegetables",
+          lang: "中文",
+          mobile: "Mobile UI",
+          desktop: "Desktop UI",
+          settings: "Settings",
+          lettuce: "Lettuce",
+          kale: "Kale",
+          lettuceMode: "Lettuce",
+          kaleMode: "Kale",
+          live: "Live",
+          trend: "Trend",
+          indexTrend: "Integrated Index",
+          zone: "Zone A",
+          stage: "Vegetative",
+          paramTitle: "Live Parameter Readings",
+          threshold: "Custom thresholds: EC / VPD enabled",
+          sceneTitle: "Cultivation Zone Live State",
+          alertTitle: "Alerts and Control Requests",
+          rulesTitle: "Expert Rule Summary",
+          rulesPill: "Main UI shows conclusions only",
+          waterNode: "Water temp / DO",
+          green: "Green",
+          yellow: "Yellow",
+          red: "Red",
+          statusIdeal: "Ideal",
+          statusWarning: "Warning",
+          statusDanger: "Danger",
+          ratio24h: "24hr ratio:",
+          ratioLights: "G/Y/R",
+          rhiSub: "Root-zone Health",
+          pmiSub: "Microclimate",
+          dliSub: "Light Completion",
+          lgiSub: "Growth Index",
+          ok: "Stable",
+          warn: "Caution",
+          ecAdvice: "EC is stable; keep nutrient strength",
+          phAdvice: "pH is stable; no dosing needed",
+          doAdvice: "DO is sufficient; keep circulation",
+          vpdAdvice: "VPD is slightly low; watch transpiration",
+          dliAdvice: "Daily light is near target; keep tracking",
+          rhiAdvice: "Root-zone uptake is stable",
+          pmiAdvice: "Humidity is high; maintain airflow",
+          dliWarn: "Projected day-end DLI is low; small supplement advised",
+          lgiOk: "Vision health is good; growth matches stage",
+          alertDli: "Create LED PWM request; verify heat load.",
+          alertTipburn: "VPD is high; no visible tipburn yet, schedule follow-up.",
+          alertKale: "Frilliness is low but DLI met; do not increase LED.",
+          fan: "Circulation fan",
+          fog: "Fogging",
+          led: "LED light",
+          rule1: "DLI shortfall projected",
+          rule2: "Root-zone stable",
+          rule3: "Vision data valid",
+          rule1Text: "Check VPD and temperature before lighting.",
+          rule2Text: "EC, pH, DO and water temp are acceptable.",
+          rule3Text: "Latest image confidence 0.91; no degraded mode.",
+          tabIndex: "Index",
+          tabParam: "Params",
+          tabLive: "Live",
+          tabRules: "Rules",
+          ideal: "Ideal",
+          realtime: "Realtime",
+          forecast: "Forecast"
+        }
+      };
+      var crops = {
+        lettuce: {
+          color: "lettuce",
+          dap: 18,
+          index: { RHI: 87, PMI: 72, "DLI-CR": 68, LGI: 84 },
+          ratios: { RHI: [76,18,6], PMI: [52,38,10], "DLI-CR": [61,33,6], LGI: [82,14,4] },
+          params: [
+            ["EC", "1.45", "mS/cm", 92, "custom"],
+            ["pH", "5.92", "", 91, "template"],
+            ["DO", "6.8", "mg/L", 86, "template"],
+            ["VPD", "1.34", "kPa", 72, "custom"],
+            ["DLI", "9.8", "mol", 68, "template"]
+          ],
+          scene: { vpd: "1.34 / 58%", co2: "642 ppm", ec: "1.45", ph: "5.92", water: "21.6 / 6.8" },
+          video: "../pics/萵苣掃描.mp4",
+          alertType: "lettuce"
+        },
+        kale: {
+          color: "kale",
+          dap: 18,
+          index: { RHI: 89, PMI: 79, "DLI-CR": 86, LGI: 76 },
+          ratios: { RHI: [82,14,4], PMI: [68,27,5], "DLI-CR": [84,13,3], LGI: [58,34,8] },
+          params: [
+            ["EC", "1.72", "mS/cm", 88, "custom"],
+            ["pH", "5.86", "", 93, "template"],
+            ["DO", "6.5", "mg/L", 84, "template"],
+            ["VPD", "0.74", "kPa", 79, "custom"],
+            ["DLI", "13.4", "mol", 86, "template"]
+          ],
+          scene: { vpd: "0.74 / 78%", co2: "610 ppm", ec: "1.72", ph: "5.86", water: "21.1 / 6.5" },
+          video: "../pics/羽衣甘藍掃描.mp4",
+          alertType: "kale"
+        }
+      };
+      function txt(key) { return i18n[lang][key]; }
+      function dayText(day) { return lang === "zh" ? "第 " + day + " / 40 天" : "DAP " + day + " / 40"; }
+      function light(score) { return score < 60 ? "red" : score < 80 ? "yellow" : "green"; }
+      function lightText(score) { return score < 60 ? txt("statusDanger") : score < 80 ? txt("statusWarning") : txt("statusIdeal"); }
+      function ringClass(score) { return score < 60 ? "redRing" : score < 80 ? "yellowRing" : ""; }
+      function indexSub(code) { return code === "RHI" ? txt("rhiSub") : code === "PMI" ? txt("pmiSub") : code === "DLI-CR" ? txt("dliSub") : txt("lgiSub"); }
+      function render() {
+        var crop = crops[cropKey];
+        document.documentElement.lang = lang === "zh" ? "zh-Hant" : "en";
+        document.title = txt("title");
+        document.getElementById("title").textContent = txt("title");
+        document.getElementById("langBtn").textContent = txt("lang");
+        document.getElementById("deviceBtn").textContent = document.body.classList.contains("mobilePreview") ? txt("desktop") : txt("mobile");
+        document.getElementById("settingsBtn").textContent = txt("settings");
+        document.getElementById("zonePill").textContent = txt("zone");
+        document.getElementById("cropPill").textContent = txt(cropKey) + " / " + txt("stage");
+        document.getElementById("dapPill").textContent = dayText(crop.dap);
+        document.querySelector("[data-crop='lettuce']").textContent = txt("lettuceMode");
+        document.querySelector("[data-crop='kale']").textContent = txt("kaleMode");
+        document.querySelector("[data-view='live']").textContent = txt("live");
+        document.querySelector("[data-view='trend']").textContent = txt("trend");
+        document.getElementById("paramTitle").textContent = txt("paramTitle");
+        document.getElementById("thresholdPill").textContent = txt("threshold");
+        document.getElementById("sceneTitle").textContent = txt("sceneTitle");
+        document.getElementById("paramTrendLabel").textContent = lang === "zh" ? "參數" : "Parameter";
+        document.getElementById("indexTrendLabel").textContent = txt("indexTrend");
+        document.getElementById("paramTrendSelect").value = selectedParamTrend;
+        document.getElementById("indexTrendSelect").value = selectedIndexTrend;
+        document.getElementById("alertTitle").textContent = txt("alertTitle");
+        document.getElementById("rulesTitle").textContent = txt("rulesTitle");
+        document.getElementById("rulesPill").textContent = txt("rulesPill");
+        document.getElementById("waterNodeLabel").textContent = txt("waterNode");
+        document.querySelector("[data-mobile-tab='indices']").textContent = txt("tabIndex");
+        document.querySelector("[data-mobile-tab='params']").textContent = txt("tabParam");
+        document.querySelector("[data-mobile-tab='livePanel']").textContent = txt("tabLive");
+        document.querySelector("[data-mobile-tab='rules']").textContent = txt("tabRules");
+        document.getElementById("indices").innerHTML = ["RHI","PMI","DLI-CR","LGI"].map(function(code) {
+          var score = crop.index[code];
+          var l = light(score);
+          var ratio = crop.ratios[code];
+          var greenDeg = ratio[0] * 3.6;
+          var yellowDeg = (ratio[0] + ratio[1]) * 3.6;
+          var sub = indexSub(code);
+          var note = code === "RHI" ? txt("rhiAdvice") : code === "PMI" ? txt("pmiAdvice") : code === "DLI-CR" ? txt("dliWarn") : txt("lgiOk");
+          return '<article class="card indexCard"><div class="head"><div class="indexName"><strong>' + code + '</strong><span class="muted">' + sub + '</span></div><span class="light ' + l + '"><i class="dot"></i>' + lightText(score) + '</span></div><div class="scoreRow"><div class="ring ' + ringClass(score) + '" style="--pct:' + score + '%"><b>' + score + '</b></div><div class="ratio"><div class="ratioWrap"><div class="ratioPie" style="--green-deg:' + greenDeg + 'deg; --yellow-deg:' + yellowDeg + 'deg"></div><div class="ratioText"><span class="muted">' + txt("ratio24h") + '</span><span class="muted">' + txt("ratioLights") + ' ' + ratio.join("/") + '%</span><span class="muted">' + note + '</span></div></div></div></div></article>';
+        }).join("");
+        document.getElementById("params").innerHTML = crop.params.map(function(p) {
+          var l = light(p[3]);
+          var adviceKey = p[0] === "EC" ? "ecAdvice" : p[0] === "pH" ? "phAdvice" : p[0] === "DO" ? "doAdvice" : p[0] === "VPD" ? "vpdAdvice" : "dliAdvice";
+          return '<article class="paramCard"><div class="head"><h3>' + p[0] + '</h3><span class="light ' + l + '"><i class="dot"></i>' + lightText(p[3]) + '</span></div><div class="paramValue">' + p[1] + ' <span class="muted">' + p[2] + '</span></div><p class="muted">' + txt(adviceKey) + '</p></article>';
+        }).join("");
+        document.getElementById("scene").classList.toggle("kale", cropKey === "kale");
+        var scanVideo = document.getElementById("scanVideo");
+        var scanVideoFill = document.getElementById("scanVideoFill");
+        if (scanVideo.getAttribute("src") !== crop.video) {
+          scanVideo.setAttribute("src", crop.video);
+          scanVideo.load();
+          scanVideo.play().catch(function(){});
+        }
+        if (scanVideoFill.getAttribute("src") !== crop.video) {
+          scanVideoFill.setAttribute("src", crop.video);
+          scanVideoFill.load();
+          scanVideoFill.play().catch(function(){});
+        }
+        document.getElementById("vpdNode").textContent = crop.scene.vpd;
+        document.getElementById("co2Node").textContent = crop.scene.co2;
+        document.getElementById("ecNode").textContent = crop.scene.ec;
+        document.getElementById("phNode").textContent = crop.scene.ph;
+        document.getElementById("waterNode").textContent = crop.scene.water;
+        var secondAlert = crop.alertType === "kale" ? txt("alertKale") : txt("alertTipburn");
+        document.getElementById("alertCount").textContent = "1 warning";
+        document.getElementById("alerts").innerHTML =
+          '<div class="item"><strong>' + txt("rule1") + '</strong><span class="muted">' + txt("alertDli") + '</span></div>' +
+          '<div class="item"><strong>' + (cropKey === "kale" ? "Kale frilliness" : "Tipburn risk") + '</strong><span class="muted">' + secondAlert + '</span></div>' +
+          '<div class="deviceRow on"><strong>' + txt("fan") + '</strong><span class="pill">ON</span></div>' +
+          '<div class="deviceRow"><strong>' + txt("fog") + '</strong><span class="pill">OFF</span></div>' +
+          '<div class="deviceRow on"><strong>' + txt("led") + '</strong><span class="pill">PWM ' + (cropKey === "kale" ? "42%" : "58%") + '</span></div>';
+        document.getElementById("rules").innerHTML =
+          '<div class="ruleCard warn"><strong>' + txt("rule1") + '</strong><span class="muted">' + txt("rule1Text") + '</span></div>' +
+          '<div class="ruleCard"><strong>' + txt("rule2") + '</strong><span class="muted">' + txt("rule2Text") + '</span></div>' +
+          '<div class="ruleCard"><strong>' + txt("rule3") + '</strong><span class="muted">' + txt("rule3Text") + '</span></div>';
+        document.getElementById("liveView").classList.toggle("hidden", view !== "live");
+        document.getElementById("trendView").classList.toggle("hidden", view !== "trend");
+        drawAll();
+      }
+      function drawChart(canvas, title, unit, ideal, real, forecast) {
+        var rect = canvas.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        var dpr = window.devicePixelRatio || 1;
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        var ctx = canvas.getContext("2d");
+        ctx.scale(dpr, dpr);
+        var w = rect.width, h = rect.height;
+        var m = { l: 42, r: 18, t: 28, b: 30 };
+        var pw = w - m.l - m.r, ph = h - m.t - m.b;
+        var all = ideal.concat(real).concat(forecast);
+        var min = Math.min.apply(null, all) - 2;
+        var max = Math.max.apply(null, all) + 2;
+        if (unit === "mS/cm") { min = 0.8; max = 2.2; }
+        if (unit === "score") { min = 50; max = 100; }
+        ctx.fillStyle = "#071827"; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = "rgba(53,230,125,.09)"; ctx.fillRect(m.l, m.t, pw, ph * .32);
+        ctx.fillStyle = "rgba(255,209,102,.08)"; ctx.fillRect(m.l, m.t + ph * .32, pw, ph * .26);
+        ctx.fillStyle = "rgba(255,91,122,.08)"; ctx.fillRect(m.l, m.t + ph * .58, pw, ph * .42);
+        ctx.strokeStyle = "#1d3d54";
+        [0,.25,.5,.75,1].forEach(function(p){ ctx.beginPath(); ctx.moveTo(m.l, m.t + ph * p); ctx.lineTo(m.l + pw, m.t + ph * p); ctx.stroke(); });
+        function y(v) { return m.t + ph * (1 - (v - min) / (max - min)); }
+        function line(arr, color, dash, offset) {
+          ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.setLineDash(dash || []); ctx.beginPath();
+          arr.forEach(function(v, i){ var x = m.l + pw * (i + (offset || 0)) / 7; if (i === 0) ctx.moveTo(x, y(v)); else ctx.lineTo(x, y(v)); });
+          ctx.stroke(); ctx.restore();
+        }
+        line(ideal, "#55dcff", [7, 6], 0);
+        line(real, "#35e67d", [], 0);
+        line(forecast, "#ffd166", [3, 5], 4);
+        ctx.fillStyle = "#edfaff"; ctx.font = "14px Microsoft JhengHei, Arial"; ctx.fillText(title, 14, 19);
+        ctx.font = "12px Microsoft JhengHei, Arial";
+        ctx.fillStyle = "#55dcff"; ctx.fillText(txt("ideal"), w - 142, 19);
+        ctx.fillStyle = "#35e67d"; ctx.fillText(txt("realtime"), w - 96, 19);
+        ctx.fillStyle = "#ffd166"; ctx.fillText(txt("forecast"), w - 48, 19);
+      }
+      function drawAll() {
+        var crop = crops[cropKey];
+        document.querySelectorAll("[data-chart]").forEach(function(canvas) {
+          if (canvas.dataset.chart === "param") {
+            var paramSeries = paramTrendSeries(cropKey, selectedParamTrend);
+            drawChart(canvas, paramSeries.label + " " + txt("ideal") + " / " + txt("realtime") + " / " + txt("forecast"), paramSeries.unit, paramSeries.ideal, paramSeries.real, paramSeries.pred);
+          } else {
+            var series = indexTrendSeries(cropKey, selectedIndexTrend);
+            drawChart(canvas, selectedIndexTrend + " " + txt("ideal") + " / " + txt("realtime") + " / " + txt("forecast"), "score", series.ideal, series.real, series.pred);
+          }
+        });
+      }
+      function paramTrendSeries(crop, code) {
+        var data = {
+          lettuce: {
+            EC: { label: "EC", unit: "mS/cm", ideal: [1.4,1.4,1.45,1.5,1.5], real: [1.32,1.38,1.45,1.48,1.45], pred: [1.47,1.5,1.54] },
+            pH: { label: "pH", unit: "", ideal: [5.8,5.8,5.9,6.0,6.0], real: [5.76,5.84,5.92,5.96,5.92], pred: [5.94,5.96,5.98] },
+            DO: { label: "DO", unit: "mg/L", ideal: [6.8,6.8,7.0,7.0,7.0], real: [6.4,6.6,6.8,6.9,6.8], pred: [6.85,6.92,7.0] },
+            VPD: { label: "VPD", unit: "kPa", ideal: [1.1,1.15,1.2,1.2,1.2], real: [1.18,1.25,1.34,1.36,1.34], pred: [1.32,1.3,1.28] },
+            DLI: { label: "DLI", unit: "mol", ideal: [12,12,12,12,12], real: [7.2,8.1,9.0,9.8,9.8], pred: [10.4,11.2,12.0] }
+          },
+          kale: {
+            EC: { label: "EC", unit: "mS/cm", ideal: [1.7,1.75,1.8,1.8,1.82], real: [1.62,1.68,1.72,1.75,1.72], pred: [1.74,1.76,1.78] },
+            pH: { label: "pH", unit: "", ideal: [5.8,5.8,5.9,6.0,6.0], real: [5.82,5.84,5.86,5.88,5.86], pred: [5.88,5.9,5.92] },
+            DO: { label: "DO", unit: "mg/L", ideal: [6.8,6.8,7.0,7.0,7.0], real: [6.1,6.3,6.5,6.6,6.5], pred: [6.55,6.65,6.75] },
+            VPD: { label: "VPD", unit: "kPa", ideal: [1.0,1.05,1.1,1.1,1.1], real: [0.68,0.7,0.74,0.76,0.74], pred: [0.76,0.8,0.84] },
+            DLI: { label: "DLI", unit: "mol", ideal: [13,13,13,13,13], real: [10.2,11.4,12.5,13.4,13.4], pred: [13.2,13.0,12.8] }
+          }
+        };
+        return (data[crop] && data[crop][code]) || data.lettuce.EC;
+      }
+      function indexTrendSeries(crop, code) {
+        var data = {
+          lettuce: {
+            RHI: { ideal: [90,90,90,90,90], real: [82,84,86,87,87], pred: [88,86,84] },
+            PMI: { ideal: [88,88,88,88,88], real: [76,74,72,72,73], pred: [74,75,77] },
+            "DLI-CR": { ideal: [85,85,85,85,85], real: [62,65,67,68,68], pred: [70,73,76] },
+            LGI: { ideal: [86,86,86,86,86], real: [78,80,82,84,84], pred: [85,86,87] }
+          },
+          kale: {
+            RHI: { ideal: [90,90,90,90,90], real: [82,84,87,89,89], pred: [88,87,86] },
+            PMI: { ideal: [88,88,88,88,88], real: [72,75,78,79,79], pred: [80,81,82] },
+            "DLI-CR": { ideal: [85,85,85,85,85], real: [78,81,84,86,86], pred: [86,86,87] },
+            LGI: { ideal: [86,86,86,86,86], real: [70,73,75,76,76], pred: [78,80,82] }
+          }
+        };
+        return (data[crop] && data[crop][code]) || data.lettuce.RHI;
+      }
+      function setMobilePanel(panel) {
+        mobilePanel = panel;
+        document.querySelectorAll("[data-mobile-panel]").forEach(function(el) {
+          el.classList.toggle("mobileActive", el.dataset.mobilePanel === panel);
+        });
+        document.querySelectorAll("[data-mobile-tab]").forEach(function(btn) {
+          btn.classList.toggle("active", btn.dataset.mobileTab === panel);
+        });
+        setTimeout(drawAll, 0);
+      }
+      document.querySelectorAll("[data-crop]").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          cropKey = btn.dataset.crop;
+          document.querySelectorAll("[data-crop]").forEach(function(b){ b.classList.toggle("active", b === btn); });
+          render();
+        });
+      });
+      document.querySelectorAll("[data-view]").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          view = btn.dataset.view;
+          document.querySelectorAll("[data-view]").forEach(function(b){ b.classList.toggle("active", b === btn); });
+          render();
+        });
+      });
+      document.getElementById("langBtn").addEventListener("click", function() {
+        lang = lang === "zh" ? "en" : "zh";
+        render();
+      });
+      document.getElementById("deviceBtn").addEventListener("click", function() {
+        var enabled = document.body.classList.toggle("mobilePreview");
+        this.classList.toggle("active", enabled);
+        setMobilePanel(mobilePanel);
+        render();
+      });
+      document.getElementById("paramTrendSelect").addEventListener("change", function() {
+        selectedParamTrend = this.value || "EC";
+        drawAll();
+      });
+      document.getElementById("indexTrendSelect").addEventListener("change", function() {
+        selectedIndexTrend = this.value || "RHI";
+        drawAll();
+      });
+      document.getElementById("settingsBtn").addEventListener("click", function() {
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({ type: "AIOT_NAVIGATE", page: "settings" }, "*");
+          try { window.parent.location.hash = "page=settings"; } catch (error) {}
+        } else {
+          window.location.href = "../../desktop/#page=settings";
+        }
+      });
+      document.querySelectorAll("[data-mobile-tab]").forEach(function(btn) {
+        btn.addEventListener("click", function(){ setMobilePanel(btn.dataset.mobileTab); });
+      });
+      window.addEventListener("resize", drawAll);
+      render();
+      setMobilePanel(mobilePanel);
+    })();
+  </script>
+</body>
+</html>
