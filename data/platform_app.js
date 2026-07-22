@@ -154,7 +154,6 @@
     "場域設定": "Site Settings",
     "白蝦 場域設定": "White Shrimp Site Settings",
     "WQI 整合分數背後的根因參數": "Root Parameters Behind WQI",
-    "WQI 根因與權重": "WQI Causes and Weights",
     "WQI 根因與燈號": "WQI Causes and Lights",
     "參數燈號占比": "Parameter Light Ratio",
     "目前自動處理": "Current Auto Handling",
@@ -962,38 +961,30 @@
   }
   function renderParameterAsidePanel() {
     if (!hasImport()) return renderRootCausePanel() + renderParameterRatioPanel() + renderAutoHandlingPanel();
-    return renderParameterWeightPanel() + renderParameterRatioPanel() + renderParameterAutoPanel();
+    return renderParameterCausePanel() + renderParameterRatioPanel() + renderParameterAutoPanel();
   }
-  function renderParameterWeightPanel() {
-    var params = runtime().parameters || {};
-    var rows = [
-      ["DO", "DO", 30, "目前主要扣分"],
-      ["pH", "pH", 20, "穩定"],
-      ["orpMv", "ORP", 15, "良好"],
-      ["salinityPpt", "鹽度", 15, "良好"],
-      ["waterTempC", "水溫", 20, "午後注意"]
-    ];
-    return '<article class="panel parameterAsidePanel"><div class="panelHeader"><h2>WQI 根因與權重</h2></div><div class="panelBody"><div class="weightList">' + rows.map(function (row) {
-      var p = params[row[0]] || {};
-      var light = p.light || (row[0] === "DO" ? "red" : "green");
-      return '<div class="weightRow"><span>' + dot(light) + '</span><strong>' + esc(row[1]) + ' ' + row[2] + '%</strong><em>' + esc(row[3]) + '</em></div>';
-    }).join("") + '</div></div></article>';
-  }
-  function renderParameterWeightPanel() {
+  function renderParameterCausePanel() {
     var params = runtime().parameters || {};
     var rows = templateParameters(config()).map(function (param) {
       var p = params[param.id] || {};
+      var score = Number(p.score);
+      var fallbackStatus = param.custom ? "客戶自訂參數" : "等待資料";
+      var status = p.label || p.freshnessStatus || fallbackStatus;
+      if (Number.isFinite(score)) {
+        if (score < 60) status = "主要扣分";
+        else if (score < 80) status = "需注意";
+        else status = "穩定";
+      }
       return {
         id: param.id,
         label: param.shortLabel || param.label || param.id,
-        weight: param.weight || "自訂",
-        status: p.label || (param.custom ? "客戶自訂參數" : "等待資料")
+        status: status
       };
     });
-    return '<article class="panel parameterAsidePanel"><div class="panelHeader"><h2>WQI 根因與權重</h2></div><div class="panelBody"><div class="weightList">' + rows.map(function (row) {
+    return '<article class="panel parameterAsidePanel compactCausePanel"><div class="panelHeader"><h2>WQI 根因狀態</h2></div><div class="panelBody"><div class="causeCompactList">' + rows.map(function (row) {
       var p = params[row.id] || {};
       var light = p.light || "none";
-      return '<div class="weightRow"><span>' + dot(light) + '</span><strong>' + esc(row.label) + ' ' + esc(row.weight) + '</strong><em>' + esc(isEn() ? translateStaticPhrase(row.status) : row.status) + '</em></div>';
+      return '<div class="causeCompactRow"><span>' + dot(light) + '</span><strong>' + esc(row.label) + '</strong><em>' + esc(isEn() ? translateStaticPhrase(row.status) : row.status) + '</em></div>';
     }).join("") + '</div></div></article>';
   }
   function renderParameterRatioPanel() {
@@ -1175,18 +1166,24 @@
   }
   function renderDeductionRatio() {
     var params = runtime().parameters || {};
-    var items = templateParameters(config()).map(function (meta, index) {
+    var weightedParams = templateParameters(config()).map(function (meta, index) {
       var p = params[meta.id] || {};
       if (p.sensorInstalled === false) return null;
       var score = Number(p.score);
       var weight = Number(String(meta.weight || "").replace(/[^\d.]/g, ""));
       if (!Number.isFinite(score) || !Number.isFinite(weight) || weight <= 0) return null;
-      var deduction = Math.max(0, 100 - score) * weight;
+      return { meta: meta, index: index, score: score, weight: weight };
+    }).filter(Boolean);
+    var weightTotal = weightedParams.reduce(function (sum, item) { return sum + item.weight; }, 0) || 1;
+    var items = weightedParams.map(function (item) {
+      var meta = item.meta;
+      var normalizedWeight = item.weight / weightTotal * 100;
+      var deduction = Math.max(0, 100 - item.score) * normalizedWeight;
       if (deduction <= 0) return null;
       return {
         label: meta.shortLabel || meta.label || meta.id,
         value: deduction,
-        color: ["var(--red)", "var(--yellow)", "var(--cyan)", "var(--green)", "var(--orange)", "#b9c7d3"][index % 6]
+        color: ["var(--red)", "var(--yellow)", "var(--cyan)", "var(--green)", "var(--orange)", "#b9c7d3"][item.index % 6]
       };
     }).filter(Boolean);
     if (!items.length && runtime().rootCause) {
@@ -1195,10 +1192,22 @@
     var total = items.reduce(function (sum, item) { return sum + item.value; }, 0);
     if (!total) return '<div class="ratioBlock deductionRatio"><h3>扣分來源</h3><div class="emptyState"><h3>尚無扣分來源</h3></div></div>';
     var values = items.map(function (item) { return item.value; });
-    return '<div class="ratioBlock deductionRatio"><h3>扣分來源</h3><div class="donutRow"><div class="donut deductionDonut" style="background:' + donutGradient(values, items.map(function (item) { return item.color; })) + '"></div><div class="legend">' + items.map(function (item) {
-      var pct = Math.round(item.value / total * 100);
+    var pcts = normalizedPercentages(values);
+    return '<div class="ratioBlock deductionRatio"><h3>扣分來源</h3><div class="donutRow"><div class="donut deductionDonut" style="background:' + donutGradient(values, items.map(function (item) { return item.color; })) + '"></div><div class="legend">' + items.map(function (item, index) {
+      var pct = pcts[index] || 0;
       return '<div class="legendItem"><span class="dot" style="background:' + esc(item.color) + '"></span>' + esc(item.label) + ' ' + pct + '%</div>';
     }).join("") + '</div></div></div>';
+  }
+  function normalizedPercentages(values) {
+    var total = values.reduce(function (sum, value) { return sum + Number(value || 0); }, 0);
+    if (!total) return values.map(function () { return 0; });
+    var rows = values.map(function (value, index) {
+      var exact = Number(value || 0) / total * 100;
+      return { index: index, base: Math.floor(exact), rest: exact - Math.floor(exact) };
+    });
+    var diff = 100 - rows.reduce(function (sum, row) { return sum + row.base; }, 0);
+    rows.slice().sort(function (a, b) { return b.rest - a.rest; }).slice(0, diff).forEach(function (row) { row.base += 1; });
+    return rows.sort(function (a, b) { return a.index - b.index; }).map(function (row) { return row.base; });
   }
   function donutGradient(values, customColors) {
     var colors = customColors || ["var(--blue)", "var(--green)", "var(--yellow)", "var(--orange)", "var(--red)"];

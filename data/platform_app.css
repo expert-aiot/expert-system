@@ -789,6 +789,30 @@ button { color: inherit; }
   font-style: normal;
   font-size: 16px;
 }
+.compactCausePanel .panelBody {
+  padding: 14px 16px;
+}
+.causeCompactList {
+  display: grid;
+  gap: 8px;
+}
+.causeCompactRow {
+  display: grid;
+  grid-template-columns: 18px minmax(56px, auto) minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-height: 28px;
+  font-size: 15px;
+}
+.causeCompactRow strong {
+  color: var(--text);
+  font-size: 15px;
+}
+.causeCompactRow em {
+  color: var(--muted);
+  font-style: normal;
+  overflow-wrap: anywhere;
+}
 .parameterAsidePanel .ratioBlock h3 {
   font-size: 22px;
 }
