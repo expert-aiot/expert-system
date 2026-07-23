@@ -479,6 +479,12 @@
     return Object.assign({}, series, { standard: line });
   }
   function isMobile() { return document.body && document.body.classList.contains("mobilePlatform"); }
+  function resolveAssetUrl(url) {
+    if (!url || /^(?:https?:|data:|blob:|\/)/i.test(url)) return url || "";
+    var path = String(root.location && root.location.pathname || "");
+    if ((path.indexOf("/desktop/") >= 0 || path.indexOf("/mobile/") >= 0) && url.indexOf("../") !== 0) return "../" + url;
+    return url;
+  }
   function hasImport() {
     var data = runtime();
     return Boolean(data.mode && data.mode !== "NO_DATA" && data.source && data.source !== "未匯入");
@@ -895,7 +901,7 @@
   }
   function renderVisionPanel() {
     var vision = runtime().underwaterVision || runtime().vision || {};
-    var imageUrl = hasImport() ? (vision.imageUrl || vision.frameUrl || vision.previewUrl || "") : "";
+    var imageUrl = hasImport() ? resolveAssetUrl(vision.imageUrl || vision.frameUrl || vision.previewUrl || "") : "";
     var media = imageUrl
       ? '<img src="' + esc(imageUrl) + '" alt="水下即時影像">'
       : '<div class="visionPlaceholder"><strong>尚未匯入影像資料</strong></div>';
