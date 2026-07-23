@@ -50,10 +50,12 @@
     weatherContext: {
       microWeather: {
         windSpeedMs: 1.8,
-        heatIndexC: 44.4
+        heatIndexC: 44.4,
+        humidityPct: 78,
+        rainMm: 18
       },
       forecast72h: [
-        { horizonDays: 1, rainProbabilityPct: 18, uvIndex: 8 }
+        { horizonDays: 1, rainProbabilityPct: 18, rainMm: 18, uvIndex: 8 }
       ],
       summary: {
         wind: "今晚風速 1.8 m/s，水面交換能力較弱",
@@ -304,6 +306,31 @@
     var state = cfg || config();
     var tpl = template(state);
     var base = (tpl && tpl.sensorRequirements) || [];
+    var runtimeParams = runtime().parameters || {};
+    var runtimeIds = Object.keys(runtimeParams).filter(function (id) {
+      var param = runtimeParams[id] || {};
+      return param.value != null && param.value !== "";
+    });
+    if (false && isDemoMode() && runtimeIds.length) {
+      return runtimeIds.map(function (id) {
+        var param = runtimeParams[id] || {};
+        var existing = base.find(function (item) { return item.parameterId === id; }) || {};
+        return Object.assign({}, existing, {
+          id: existing.id || "demo-sensor-" + id,
+          parameterId: id,
+          requirement: existing.requirement || "required",
+          label: existing.label || param.name || id,
+          labelEn: existing.labelEn || param.nameEn || param.name || id,
+          unit: existing.unit || param.unit || "",
+          productImageUrl: existing.productImageUrl || "",
+          productName: existing.productName || param.name || id,
+          productNameEn: existing.productNameEn || param.nameEn || param.name || id,
+          description: existing.description || "DEMO 實際資料參數",
+          descriptionEn: existing.descriptionEn || "Parameter available in DEMO data",
+          demoLinked: true
+        });
+      });
+    }
     var customById = {};
     customParameters(state).forEach(function (param) { customById[param.id] = param; });
     base = base.map(function (item) {
@@ -1539,11 +1566,43 @@
     var rows = sensorRequirements(cfg);
     if (!rows.length) return "";
     var params = runtime().parameters || {};
+    function weatherParam(id) {
+      var weather = runtime().weatherContext || {};
+      var micro = weather.microWeather || {};
+      var day1 = (weather.forecast72h || []).find(function (item) { return Number(item.horizonDays) === 1; }) || {};
+      var map = {
+        windSpeedMs: micro.windSpeedMs != null ? micro.windSpeedMs + " m/s" : null,
+        airTempC: micro.airTempC != null ? micro.airTempC + " C" : (micro.heatIndexC != null ? "熱指數 " + micro.heatIndexC + " C" : null),
+        heatIndexC: micro.heatIndexC != null ? micro.heatIndexC + " C" : null,
+        rainMm: micro.rainMm != null ? micro.rainMm + " mm" : (day1.rainMm != null ? day1.rainMm + " mm" : null),
+        uvIndex: day1.uvIndex != null ? String(day1.uvIndex) : null,
+        humidityPct: micro.humidityPct != null ? micro.humidityPct + "%" : null,
+        airPressureHpa: micro.airPressureHpa != null ? micro.airPressureHpa + " hPa" : null
+      };
+      return map[id] != null ? { value: map[id], isInstalled: true, sensorInstalled: true } : null;
+    }
+    function runtimeForSensor(sensor) {
+      if (params[sensor.parameterId]) return params[sensor.parameterId];
+      var weather = weatherParam(sensor.parameterId);
+      if (weather) return weather;
+      if (sensor.parameterId === "vision") {
+        var vision = runtime().underwaterVision || {};
+        if (vision.bodyLengthCm != null || vision.bodyWeightG != null) {
+          return {
+            value: [vision.bodyLengthCm != null ? vision.bodyLengthCm + " cm" : null, vision.bodyWeightG != null ? vision.bodyWeightG + " g" : null].filter(Boolean).join(" / "),
+            unit: "",
+            isInstalled: true,
+            sensorInstalled: true
+          };
+        }
+      }
+      return {};
+    }
     var cards = rows.map(function (sensor) {
-      var runtimeParam = params[sensor.parameterId] || {};
+      var runtimeParam = runtimeForSensor(sensor);
       var meta = parameterMeta(sensor.parameterId);
-      var installed = runtimeParam.sensorInstalled === false || runtimeParam.isInstalled === false || sensor.sensorInstalled === false ? false : true;
-      var hasValue = installed && runtimeParam.value != null && runtimeParam.value !== "";
+      var hasValue = runtimeParam.value != null && runtimeParam.value !== "";
+      var installed = hasValue || !(runtimeParam.sensorInstalled === false || runtimeParam.isInstalled === false || sensor.sensorInstalled === false);
       var required = sensor.requirement === "required";
       var statusText = !installed && required
         ? l("必配未安裝", "Required sensor not installed")
