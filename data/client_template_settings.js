@@ -3,7 +3,8 @@
 
   var CONFIG_KEY = "AIOT_CLIENT_CONFIG_V1";
   var CHANNEL_NAME = "AIOT_CLIENT_CONFIG_CHANNEL";
-  var API_PATH = "/api/client-config";
+  var API_PATH = root.AIOT_CLIENT_CONFIG_API_URL || "/api/client-config";
+  var CLIENT_ID = root.AIOT_CLIENT_ID || ((document.body && document.body.classList.contains("mobilePlatform")) ? "mobile" : "desktop");
   var syncChannel = null;
   var pendingServerWrite = false;
 
@@ -130,6 +131,23 @@
     }
   }
 
+  function updatedAtValue(config) {
+    var time = config && config.updatedAt ? Date.parse(config.updatedAt) : 0;
+    return Number.isNaN(time) ? 0 : time;
+  }
+
+  function normalizeConfigPayload(payload, fallback) {
+    var config = payload && payload.config && typeof payload.config === "object" ? payload.config : (payload && typeof payload === "object" ? payload : fallback || {});
+    if (payload && payload.updatedAt && !config.updatedAt) config.updatedAt = payload.updatedAt;
+    if (payload && payload.updatedBy && !config.updatedBy) config.updatedBy = payload.updatedBy;
+    return config || {};
+  }
+
+  function storeConfig(next, source) {
+    root.localStorage.setItem(CONFIG_KEY, JSON.stringify(next || {}));
+    emitConfigUpdated(next || {}, source);
+  }
+
   function emitConfigUpdated(next, source) {
     var state = next || loadConfig();
     root.dispatchEvent(new CustomEvent("AIOT_CLIENT_CONFIG_UPDATED", { detail: state }));
@@ -144,7 +162,7 @@
       return root.fetch(API_PATH, {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ config: next || {} })
+        body: JSON.stringify({ config: next || {}, updatedAt: (next || {}).updatedAt, updatedBy: CLIENT_ID })
       }).then(function (response) { return response.ok ? response.json() : { ok: false }; }).catch(function () { return { ok: false }; });
     } catch (error) {
       return Promise.resolve({ ok: false });
@@ -157,11 +175,10 @@
     return root.fetch(API_PATH, { cache: "no-store" })
       .then(function (response) { return response.ok ? response.json() : { config: loadConfig() }; })
       .then(function (payload) {
-        var next = payload && payload.config && typeof payload.config === "object" ? payload.config : {};
+        var next = normalizeConfigPayload(payload, {});
         var current = loadConfig();
-        if (JSON.stringify(current || {}) !== JSON.stringify(next || {})) {
-          root.localStorage.setItem(CONFIG_KEY, JSON.stringify(next));
-          emitConfigUpdated(next, "server");
+        if (updatedAtValue(next) >= updatedAtValue(current) && JSON.stringify(current || {}) !== JSON.stringify(next || {})) {
+          storeConfig(next, "server");
         }
         return next;
       })
@@ -169,9 +186,8 @@
   }
 
   function saveConfig(partial) {
-    var next = Object.assign({}, loadConfig(), partial || {}, { updatedAt: new Date().toISOString() });
-    root.localStorage.setItem(CONFIG_KEY, JSON.stringify(next));
-    emitConfigUpdated(next, "local");
+    var next = Object.assign({}, loadConfig(), partial || {}, { updatedAt: new Date().toISOString(), updatedBy: CLIENT_ID });
+    storeConfig(next, "local");
     pendingServerWrite = true;
     pushConfigToServer(next).then(function () {
       pendingServerWrite = false;
@@ -195,18 +211,16 @@
         if (/^(AIOT_|JNC_|WHITE_SHRIMP_|runtime|mockup)/i.test(key)) store.removeItem(key);
       });
     });
-    root.localStorage.setItem(CONFIG_KEY, "{}");
-    emitConfigUpdated({}, "local");
+    storeConfig({ updatedAt: new Date().toISOString(), updatedBy: CLIENT_ID }, "local");
     pendingServerWrite = true;
-    pushConfigToServer({}).then(function () { pendingServerWrite = false; });
+    pushConfigToServer(loadConfig()).then(function () { pendingServerWrite = false; });
   }
 
   if (syncChannel) {
     syncChannel.onmessage = function (event) {
       var next = event.data && event.data.type === "client-config" ? event.data.config : null;
       if (!next || typeof next !== "object") return;
-      root.localStorage.setItem(CONFIG_KEY, JSON.stringify(next));
-      emitConfigUpdated(next, "channel");
+      if (updatedAtValue(next) >= updatedAtValue(loadConfig())) storeConfig(next, "channel");
     };
   }
 
@@ -248,6 +262,7 @@
     saveConfig: saveConfig,
     syncConfigFromServer: syncConfigFromServer,
     pushConfigToServer: pushConfigToServer,
+    clientConfigApiUrl: API_PATH,
     currentTemplate: currentTemplate,
     isTemplateSelected: isTemplateSelected,
     clearPlatformState: clearPlatformState,
