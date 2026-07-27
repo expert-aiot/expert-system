@@ -35,7 +35,7 @@
     button { font: inherit; color: inherit; }
     .shell { width: min(1440px, 100%); margin: 0 auto; padding: 16px 18px 24px; }
     body.mobilePreview .shell {
-      width: min(430px, calc(100% - 24px));
+      width: min(390px, calc(100% - 48px));
       min-height: calc(100vh - 24px);
       margin: 12px auto;
       padding: 12px 12px 86px;
@@ -160,13 +160,15 @@
       gap: 10px;
       align-items: flex-start;
     }
-    .indexName { display: grid; gap: 4px; }
+    .indexName { display: grid; gap: 4px; min-width: 0; }
     .indexName strong { color: #8de6ff; font-size: 21px; }
     .light {
       display: inline-flex;
       align-items: center;
       gap: 7px;
       width: fit-content;
+      max-width: 100%;
+      flex-shrink: 0;
       min-height: 30px;
       border: 1px solid var(--line-soft);
       border-radius: 999px;
@@ -228,17 +230,29 @@
       gap: 4px;
     }
     .paramGrid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-    .liveReadings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 8px; align-content: stretch; height: 100%; }
+    .liveReadings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto repeat(3, minmax(0, 1fr)); gap: 8px; align-content: stretch; height: 100%; }
     .paramCard {
-      padding: 10px;
+      padding: 9px;
       display: grid;
-      gap: 8px;
+      gap: 6px;
       align-content: center;
       background: var(--panel2);
       border: 1px solid var(--line-soft);
       border-radius: 8px;
     }
-    .paramValue { font-size: 22px; font-weight: 900; color: #fff; line-height: 1; }
+    .paramValue { font-size: 21px; font-weight: 900; color: #fff; line-height: 1; }
+    .leafTempCard { grid-column: 1 / -1; align-content: start; gap: 8px; min-height: 132px; }
+    .leafTempTop { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: start; }
+    .leafMeta { display: grid; gap: 3px; color: var(--muted); font-size: 12px; line-height: 1.35; }
+    .measureRows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .measureRow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 7px; align-items: center; min-width: 0; border: 1px solid rgba(85, 220, 255, .25); border-radius: 8px; padding: 6px; background: rgba(4, 17, 30, .42); font-size: 12px; }
+    .measureRow strong { color: #fff; font-size: 14px; }
+    .miniDot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); box-shadow: 0 0 14px rgba(53,230,125,.34); }
+    .miniDot.yellow { background: var(--yellow); box-shadow: 0 0 14px rgba(255,209,102,.34); }
+    .miniDot.red { background: var(--red); box-shadow: 0 0 14px rgba(255,91,122,.34); }
+    .thermalThumb { width: 58px; height: 38px; border-radius: 8px; border: 1px solid rgba(255, 209, 102, .48); background: radial-gradient(circle at 62% 42%, rgba(255,91,122,.95), transparent 24%), radial-gradient(circle at 38% 58%, rgba(255,209,102,.9), transparent 28%), linear-gradient(135deg, #11395d, #26765c 48%, #061827); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12), 0 12px 22px rgba(0,0,0,.2); }
+    .leafTempRatio { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 8px; align-items: center; }
+    .leafTempRatio .ratioPie { width: 38px; }
     .chartGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .chart {
       width: 100%;
@@ -248,6 +262,12 @@
       border-radius: 8px;
       background: var(--panel2);
     }
+    .chart.hidden { display: none; }
+    .leafTempTrend { min-height: 230px; border: 1px solid var(--line-soft); border-radius: 8px; padding: 12px; background: var(--panel2); display: grid; gap: 10px; align-content: start; }
+    .leafTempTrend.hidden { display: none; }
+    .recordGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .dotHistory { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+    .dayDot { display: grid; place-items: center; min-height: 34px; border: 1px solid rgba(85,220,255,.25); border-radius: 8px; background: rgba(4,17,30,.38); color: #dff8ff; font-size: 12px; font-weight: 800; }
     .cultivationLayout { display: grid; grid-template-columns: 320px 400px 420px; gap: 12px; align-items: stretch; justify-content: start; }
     .imageColumn { min-width: 0; display: flex; justify-content: flex-start; }
     .lgiPanel { display: grid; gap: 10px; align-content: start; background: rgba(7, 24, 39, .86); }
@@ -370,21 +390,41 @@
     .tier.now { border-color: var(--red); background: rgba(255, 91, 122, .18); }
     .deviceRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; border: 1px solid var(--line-soft); border-radius: 8px; padding: 10px; background: var(--panel2); }
     .deviceRow.on { border-color: var(--green); background: #0f3a2b; }
-    .ruleGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .ruleCard { display: grid; gap: 6px; border: 1px solid var(--line-soft); border-radius: 8px; padding: 12px; background: var(--panel2); }
-    .ruleCard.warn { border-color: var(--yellow); background: #332b18; }
-    .ruleCard strong { color: #fff; }
+    .ruleGrid { grid-template-columns: 1fr; gap: 8px; }
+    .ruleCard { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; border: 1px solid var(--line-soft); border-radius: 8px; padding: 10px; background: var(--panel2); }
+    .ruleCard.warn { border-color: var(--yellow); background: rgba(255, 209, 102, .12); }
+    .ruleCard strong { color: #fff; display: block; margin-bottom: 3px; }
+    .ruleBadge { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 999px; border: 1px solid var(--line-soft); color: #fff; font-size: 12px; font-weight: 900; background: rgba(85, 220, 255, .12); }
+    .ruleCard.warn .ruleBadge { border-color: var(--yellow); background: rgba(255, 209, 102, .2); }
     .hidden { display: none !important; }
+    .mobileOnlyPanel { display: none; margin-top: 14px; }
     .mobileTabs { display: none; }
     body.mobilePreview [data-mobile-panel] { display: none; }
     body.mobilePreview [data-mobile-panel].mobileActive { display: grid; }
     body.mobilePreview .panel.mobileActive { display: block; }
+    body.mobilePreview .mobileOnlyPanel.mobileActive { display: block; }
+    body.mobilePreview .mobileOnlyPanel .liveReadings { height: auto; }
+    body.mobilePreview .cultivationLayout > .liveReadings { display: none; }
+    body.mobilePreview .mobileLiveAlerts { display: grid; gap: 8px; }
+    body.mobilePreview[data-mobile-panel="rules"] .bottomGrid.mobileActive .panel:first-child { display: none; }
+    body.mobilePreview .bottomGrid .panelHead { display: grid; grid-template-columns: 1fr; justify-items: start; gap: 8px; }
+    body.mobilePreview[data-mobile-panel="rules"] .shell { width: min(430px, calc(100% - 18px)); padding-left: 10px; padding-right: 10px; }
+    body.mobilePreview[data-mobile-panel="rules"] .bottomGrid { gap: 0; }
+    body.mobilePreview[data-mobile-panel="rules"] .bottomGrid .panel:last-child { width: 100%; }
+    body.mobilePreview[data-mobile-panel="rules"] .bottomGrid .panelHead { padding: 12px; }
+    body.mobilePreview[data-mobile-panel="rules"] #rulesTitle { font-size: 22px; white-space: nowrap; line-height: 1.2; }
+    body.mobilePreview[data-mobile-panel="rules"] #rulesPill { min-height: 30px; padding-top: 4px; padding-bottom: 4px; }
+    body.mobilePreview[data-mobile-panel="rules"] .ruleGrid { gap: 10px; padding: 12px; }
+    body.mobilePreview[data-mobile-panel="rules"] .ruleCard { grid-template-columns: 1fr; gap: 8px; padding: 12px; }
+    body.mobilePreview[data-mobile-panel="rules"] .ruleBadge { width: max-content; min-width: 30px; height: 26px; padding: 0 8px; }
+    body.mobilePreview[data-mobile-panel="rules"] .ruleCard strong { font-size: 18px; line-height: 1.25; margin-bottom: 4px; }
+    body.mobilePreview[data-mobile-panel="rules"] .ruleCard .muted { font-size: 15px; line-height: 1.55; }
     body.mobilePreview .mobileTabs {
       position: fixed;
       left: 50%;
       bottom: 12px;
       z-index: 20;
-      width: min(430px, calc(100% - 24px));
+      width: min(360px, calc(100% - 72px));
       transform: translateX(-50%);
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -396,7 +436,7 @@
       box-shadow: 0 16px 42px rgba(0, 0, 0, .42);
       backdrop-filter: blur(12px);
     }
-    .mobileTab { min-height: 46px; border-radius: 12px; font-size: 13px; padding: 4px; }
+    .mobileTab { min-height: 46px; border-radius: 12px; font-size: 12px; padding: 4px; }
     body.mobilePreview .top,
     body.mobilePreview .overview,
     body.mobilePreview .main,
@@ -404,12 +444,16 @@
     body.mobilePreview .trendSelectorGrid,
     body.mobilePreview .ruleGrid { grid-template-columns: 1fr; }
     body.mobilePreview .top { gap: 10px; }
+    body.mobilePreview .top > *, body.mobilePreview .panel, body.mobilePreview .card, body.mobilePreview .paramCard { min-width: 0; }
     body.mobilePreview .brand { font-size: 21px; }
     body.mobilePreview .title { font-size: 18px; padding: 9px 12px; }
     body.mobilePreview .meta { justify-content: flex-start; }
     body.mobilePreview .ratioToolbar { align-items: stretch; flex-direction: column; }
     body.mobilePreview .paramGrid, body.mobilePreview .liveReadings { grid-template-columns: 1fr; }
     body.mobilePreview .cultivationLayout { grid-template-columns: 1fr; }
+    body.mobilePreview .lgiPanel { order: 1; }
+    body.mobilePreview .mobileLiveAlerts { order: 2; }
+    body.mobilePreview .imageColumn { order: 3; }
     body.mobilePreview .scoreRow { grid-template-columns: 82px 1fr; }
     body.mobilePreview .ring { width: 82px; }
     body.mobilePreview .ring b { font-size: 25px; }
@@ -424,13 +468,19 @@
     body.mobilePreview .visionSummary { grid-template-columns: 1fr; }
     @media (max-width: 1120px) {
       .top, .overview, .main, .bottomGrid, .cultivationLayout, .chartGrid, .trendSelectorGrid, .ruleGrid { grid-template-columns: 1fr; }
+      .top > *, .panel, .card, .paramCard, .ratioToolbar { min-width: 0; }
       .paramGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .meta { justify-content: flex-start; }
+      .ratioToolbar { flex-wrap: wrap; gap: 8px; }
       .scene { height: auto; min-height: 0; aspect-ratio: 4 / 5; }
     }
     @media (max-width: 640px) {
-      .shell { padding: 12px; }
+      .shell { padding: 12px; overflow-x: hidden; }
+      .windowSwitch { flex-wrap: wrap; }
+      .pill, .seg button, .toolButton, .tab, .mobileTab { padding-left: 10px; padding-right: 10px; }
+      .light { font-size: 12px; padding-left: 8px; padding-right: 8px; }
       .title { font-size: 19px; }
+      .indexCard .head, .paramCard .head { display: grid; grid-template-columns: 1fr; justify-items: start; }
       .brand { font-size: 22px; }
       .paramGrid { grid-template-columns: 1fr; }
       .scene { height: auto; min-height: 0; aspect-ratio: 4 / 5; }
@@ -492,6 +542,7 @@
               </div>
             </div>
             <div class="liveReadings" id="liveReadings"></div>
+            <div class="mobileLiveAlerts sideList" id="mobileLiveAlerts"></div>
           </div>
         </div>
         <div class="panelBody hidden" id="trendView">
@@ -504,6 +555,7 @@
                 <option value="DO">DO</option>
                 <option value="VPD">VPD</option>
                 <option value="DLI">DLI</option>
+                <option value="leafTemp"></option>
               </select>
             </div>
             <div class="trendToolbar">
@@ -517,6 +569,7 @@
             </div>
           </div>
           <div class="grid chartGrid">
+            <section class="leafTempTrend hidden" id="leafTempTrend"></section>
             <canvas class="chart" data-chart="param"></canvas>
             <canvas class="chart" data-chart="index"></canvas>
           </div>
@@ -524,7 +577,12 @@
       </article>
     </section>
 
-    <section class="grid bottomGrid" data-mobile-panel="livePanel rules">
+    <section class="panel mobileOnlyPanel" data-mobile-panel="params">
+      <div class="panelHead"><h2 id="mobileParamsTitle"></h2></div>
+      <div class="panelBody liveReadings" id="mobileReadings"></div>
+    </section>
+
+    <section class="grid bottomGrid" data-mobile-panel="rules">
       <section class="panel">
         <div class="panelHead"><h2 id="alertTitle"></h2><span class="light yellow"><i class="dot"></i><span id="alertCount"></span></span></div>
         <div class="panelBody sideList" id="alerts"></div>
@@ -573,6 +631,7 @@
           zone: "生長區 A",
           stage: "生長期",
           paramTitle: "參數即時讀值",
+          mobileParamsTitle: "參數即時讀值",
           threshold: "已套用客戶門檻：EC / VPD",
           sceneTitle: "栽培區即時狀態",
           alertTitle: "警報與處置",
@@ -637,7 +696,24 @@
           tabRules: "規則",
           ideal: "理想",
           realtime: "即時",
-          forecast: "預測"
+          forecast: "預測",
+          leafTempLabel: "葉面溫度",
+          latestMeasurement: "最近量測",
+          validUntil: "有效至",
+          todayRecords: "今日量測紀錄",
+          sevenDayRecords: "近 7 天量測",
+          countRatio: "量測次數占比",
+          thermalImage: "熱影像",
+          measuredAt: "今日 {time} 量測",
+          noCurve: "每日 11:00 / 14:00 量測紀錄",
+          missing: "待量測",
+          expired: "資料過期",
+          leafTempAdviceHot: "葉溫偏高，暫緩提高補光",
+          leafTempAdviceOk: "葉溫有效，可依 DLI 補光",
+          leafTempDliHot: "DLI 不足但葉溫偏高，先暫緩增光。",
+          leafTempDliOk: "DLI 條件正常，葉溫證據有效。",
+          leafTempRuleHot: "補光前先確認葉溫；目前建議先降熱負荷。",
+          leafTempRuleOk: "葉溫量測有效，補光策略可維持小幅調整。"
         },
         en: {
           title: "Expert System | Hydroponic Vegetables",
@@ -658,6 +734,7 @@
           zone: "Zone A",
           stage: "Vegetative",
           paramTitle: "Live Parameter Readings",
+          mobileParamsTitle: "Live Parameter Readings",
           threshold: "Customer thresholds applied: EC / VPD",
           sceneTitle: "Cultivation Zone Live State",
           alertTitle: "Alerts and Actions",
@@ -722,7 +799,24 @@
           tabRules: "Rules",
           ideal: "Ideal",
           realtime: "Realtime",
-          forecast: "Forecast"
+          forecast: "Forecast",
+          leafTempLabel: "Leaf temperature",
+          latestMeasurement: "Latest measurement",
+          validUntil: "Valid until",
+          todayRecords: "Today's records",
+          sevenDayRecords: "Last 7 days",
+          countRatio: "Measurement count ratio",
+          thermalImage: "Thermal image",
+          measuredAt: "Measured today {time}",
+          noCurve: "11:00 / 14:00 measurement records",
+          missing: "Due",
+          expired: "Expired",
+          leafTempAdviceHot: "Leaf temperature is high; defer extra lighting",
+          leafTempAdviceOk: "Leaf temperature valid; DLI lighting allowed",
+          leafTempDliHot: "DLI is short but leaf temperature is high; defer lighting increase.",
+          leafTempDliOk: "DLI condition is normal; leaf-temperature evidence is valid.",
+          leafTempRuleHot: "Confirm leaf temperature before lighting; reduce heat load first.",
+          leafTempRuleOk: "Leaf-temperature reading is valid; keep small lighting adjustments."
         }
       };
       var crops = {
@@ -742,6 +836,16 @@
             ["VPD", "1.34", "kPa", 72, "custom"],
             ["DLI", "9.8", "mol", 68, "template"]
           ],
+          leafTemp: {
+            value: "25.9", unit: "°C", score: 72, measuredAt: "14:06", validUntil: "16:06", thermal: true,
+            ratios: { "24hr": [50,50,0], "7d": [57,36,7], "30d": [64,30,6] },
+            records: [
+              { slot: "11:00", value: "24.1", score: 84, status: "valid", thermal: false },
+              { slot: "14:00", value: "25.9", score: 72, status: "valid", thermal: true }
+            ],
+            history: ["23.8", "24.4", "25.2", "24.7", "26.1", "25.5", "25.9"],
+            pmiNoteKey: "leafTempAdviceHot", dliAlertKey: "leafTempDliHot", ruleTextKey: "leafTempRuleHot"
+          },
           scene: { vpd: "1.34 / 58%", co2: "642 ppm", ec: "1.45", ph: "5.92", water: "21.6 / 6.8" },
           video: "../pics/萵苣掃描.mp4",
           visionKeys: ["visionLettuce1", "visionLettuce2", "visionLettuce3"],
@@ -763,6 +867,16 @@
             ["VPD", "0.74", "kPa", 79, "custom"],
             ["DLI", "13.4", "mol", 86, "template"]
           ],
+          leafTemp: {
+            value: "23.4", unit: "°C", score: 86, measuredAt: "14:04", validUntil: "16:04", thermal: true,
+            ratios: { "24hr": [100,0,0], "7d": [86,14,0], "30d": [82,16,2] },
+            records: [
+              { slot: "11:00", value: "22.8", score: 90, status: "valid", thermal: false },
+              { slot: "14:00", value: "23.4", score: 86, status: "valid", thermal: true }
+            ],
+            history: ["22.6", "23.0", "23.2", "22.9", "23.5", "23.1", "23.4"],
+            pmiNoteKey: "leafTempAdviceOk", dliAlertKey: "leafTempDliOk", ruleTextKey: "leafTempRuleOk"
+          },
           scene: { vpd: "0.74 / 78%", co2: "610 ppm", ec: "1.72", ph: "5.86", water: "21.1 / 6.5" },
           video: "../pics/羽衣甘藍掃描.mp4",
           visionKeys: ["visionKale1", "visionKale2", "visionKale3"],
@@ -802,9 +916,11 @@
         document.getElementById("sceneTitle").textContent = txt("sceneTitle");
         document.getElementById("paramTrendLabel").textContent = lang === "zh" ? "參數" : "Parameter";
         document.getElementById("indexTrendLabel").textContent = txt("indexTrend");
+        document.querySelector("#paramTrendSelect option[value='leafTemp']").textContent = txt("leafTempLabel");
         document.getElementById("paramTrendSelect").value = selectedParamTrend;
         document.getElementById("indexTrendSelect").value = selectedIndexTrend;
         document.getElementById("alertTitle").textContent = txt("alertTitle");
+        document.getElementById("mobileParamsTitle").textContent = txt("mobileParamsTitle");
         document.getElementById("rulesTitle").textContent = txt("rulesTitle");
         document.getElementById("rulesPill").textContent = txt("rulesPill");
         document.querySelector("[data-mobile-tab='indices']").textContent = txt("tabIndex");
@@ -818,14 +934,12 @@
           var greenDeg = ratio[0] * 3.6;
           var yellowDeg = (ratio[0] + ratio[1]) * 3.6;
           var sub = indexSub(code);
-          var note = code === "RHI" ? txt("rhiAdvice") : code === "PMI" ? txt("pmiAdvice") : code === "DLI-CR" ? txt("dliWarn") : txt("lgiOk");
+          var note = code === "RHI" ? txt("rhiAdvice") : code === "PMI" ? txt(crop.leafTemp.pmiNoteKey) : code === "DLI-CR" ? txt("dliWarn") : txt("lgiOk");
           return '<article class="card indexCard"><div class="head"><div class="indexName"><strong>' + code + '</strong><span class="muted">' + sub + '</span></div><span class="light ' + l + '"><i class="dot"></i>' + lightText(score) + '</span></div><div class="scoreRow"><div class="ring ' + ringClass(score) + '" style="--pct:' + score + '%"><b>' + score + '</b></div><div class="ratio"><div class="ratioWrap"><div class="ratioPie" style="--green-deg:' + greenDeg + 'deg; --yellow-deg:' + yellowDeg + 'deg"></div><div class="ratioText"><span class="muted">' + (txt("ratio24h") || "24h") + '</span><span class="muted">' + txt("ratioLights") + ' ' + ratio.join("/") + '%</span><span class="muted">' + note + '</span></div></div></div></div></article>';
         }).join("");
-        document.getElementById("liveReadings").innerHTML = crop.params.slice(0, 4).map(function(p) {
-          var l = light(p[3]);
-          var adviceKey = p[0] === "EC" ? "ecAdvice" : p[0] === "pH" ? "phAdvice" : p[0] === "DO" ? "doAdvice" : p[0] === "VPD" ? "vpdAdvice" : "dliAdvice";
-          return '<article class="paramCard"><div class="head"><h3>' + p[0] + '</h3><span class="light ' + l + '"><i class="dot"></i>' + lightText(p[3]) + '</span></div><div class="paramValue">' + p[1] + ' <span class="muted">' + p[2] + '</span></div></article>';
-        }).join("") + '<article class="paramCard"><div class="head"><h3>CO2</h3><span class="light green"><i class="dot"></i>' + txt("statusIdeal") + '</span></div><div class="paramValue">' + crop.scene.co2 + '</div></article><article class="paramCard"><div class="head"><h3>' + txt("waterNode") + '</h3></div><div class="paramValue">' + crop.scene.water + '</div></article>';
+        var readingsHtml = renderLiveReadings(crop);
+        document.getElementById("liveReadings").innerHTML = readingsHtml;
+        document.getElementById("mobileReadings").innerHTML = readingsHtml;
         document.getElementById("scene").classList.toggle("kale", cropKey === "kale");
         var scanVideo = document.getElementById("scanVideo");
         var scanVideoFill = document.getElementById("scanVideoFill");
@@ -850,20 +964,60 @@
         var secondAlert = crop.alertType === "kale" ? txt("alertKale") : txt("alertTipburn");
         var secondAlertTitle = crop.alertType === "kale" ? txt("kaleAlertTitle") : txt("lettuceAlertTitle");
         document.getElementById("alertCount").textContent = txt("alertCountText");
-        document.getElementById("alerts").innerHTML =
-          '<div class="item"><div class="itemHead"><strong>' + txt("rule1") + '</strong><span class="tier today">' + txt("tierToday") + '</span></div><span class="muted">' + txt("alertDli") + '</span></div>' +
+        var alertsHtml =
+          '<div class="item"><div class="itemHead"><strong>' + txt("rule1") + '</strong><span class="tier today">' + txt("tierToday") + '</span></div><span class="muted">' + txt(crop.leafTemp.dliAlertKey) + '</span></div>' +
           '<div class="item"><div class="itemHead"><strong>' + secondAlertTitle + '</strong><span class="tier observe">' + txt("tierObserve") + '</span></div><span class="muted">' + secondAlert + '</span></div>' +
           '<div class="deviceRow on"><strong>' + txt("fan") + '</strong><span class="pill">ON</span></div>' +
           '<div class="deviceRow"><strong>' + txt("fog") + '</strong><span class="pill">OFF</span></div>' +
           '<div class="deviceRow on"><strong>' + txt("led") + '</strong><span class="pill">PWM ' + (cropKey === "kale" ? "42%" : "58%") + '</span></div>';
+        document.getElementById("alerts").innerHTML = alertsHtml;
+        document.getElementById("mobileLiveAlerts").innerHTML = '<div class="mobileAlertTitle"><strong>' + txt("alertTitle") + '</strong><span class="light yellow"><i class="dot"></i>' + txt("alertCountText") + '</span></div>' + alertsHtml;
         document.getElementById("rules").innerHTML =
-          '<div class="ruleCard warn"><strong>' + txt("rule1") + '</strong><span class="muted">' + txt("rule1Text") + '</span></div>' +
-          '<div class="ruleCard"><strong>' + txt("rule2") + '</strong><span class="muted">' + txt("rule2Text") + '</span></div>' +
-          '<div class="ruleCard"><strong>' + txt("rule3") + '</strong><span class="muted">' + txt("rule3Text") + '</span></div>';
+          '<div class="ruleCard warn"><span class="ruleBadge">01</span><div><strong>' + txt("rule1") + '</strong><span class="muted">' + txt(crop.leafTemp.ruleTextKey) + '</span></div></div>' +
+          '<div class="ruleCard"><span class="ruleBadge">02</span><div><strong>' + txt("rule2") + '</strong><span class="muted">' + txt("rule2Text") + '</span></div></div>' +
+          '<div class="ruleCard"><span class="ruleBadge">03</span><div><strong>' + txt("rule3") + '</strong><span class="muted">' + txt("rule3Text") + '</span></div></div>';
         document.getElementById("liveView").classList.toggle("hidden", view !== "live");
         document.getElementById("trendView").classList.toggle("hidden", view !== "trend");
         drawAll();
       }
+
+      function renderLiveReadings(crop) {
+        return renderLeafTempCard(crop) + crop.params.slice(0, 4).map(function(p) {
+          var l = light(p[3]);
+          return '<article class="paramCard"><div class="head"><h3>' + p[0] + '</h3><span class="light ' + l + '"><i class="dot"></i>' + lightText(p[3]) + '</span></div><div class="paramValue">' + p[1] + ' <span class="muted">' + p[2] + '</span></div></article>';
+        }).join("") + '<article class="paramCard"><div class="head"><h3>CO2</h3><span class="light green"><i class="dot"></i>' + txt("statusIdeal") + '</span></div><div class="paramValue">' + crop.scene.co2 + '</div></article><article class="paramCard"><div class="head"><h3>' + txt("waterNode") + '</h3></div><div class="paramValue">' + crop.scene.water + '</div></article>';
+      }
+
+      function renderLeafTempCard(crop) {
+        var lt = crop.leafTemp;
+        var l = light(lt.score);
+        var ratio = lt.ratios[ratioWindow];
+        var greenDeg = ratio[0] * 3.6;
+        var yellowDeg = (ratio[0] + ratio[1]) * 3.6;
+        var rows = lt.records.map(function(r) {
+          var rl = light(r.score);
+          var thermal = r.thermal ? '<span class="muted">' + txt("thermalImage") + '</span>' : '<span class="muted">--</span>';
+          return '<div class="measureRow"><span>' + r.slot + '</span><strong>' + r.value + lt.unit + '</strong><span class="miniDot ' + (rl === "green" ? "" : rl) + '"></span>' + thermal + '</div>';
+        }).join("");
+        return '<article class="paramCard leafTempCard"><div class="leafTempTop"><div><div class="head"><h3>' + txt("leafTempLabel") + '</h3><span class="light ' + l + '"><i class="dot"></i>' + lightText(lt.score) + '</span></div><div class="paramValue">' + lt.value + ' <span class="muted">' + lt.unit + '</span></div><div class="leafMeta"><span>' + txt("measuredAt").replace("{time}", lt.measuredAt) + '</span><span>' + txt("validUntil") + ' ' + lt.validUntil + '</span></div></div><div class="thermalThumb" title="' + txt("thermalImage") + '"></div></div><div class="measureRows">' + rows + '</div><div class="leafTempRatio"><div class="ratioPie" style="--green-deg:' + greenDeg + 'deg; --yellow-deg:' + yellowDeg + 'deg"></div><div class="ratioText"><span class="muted">' + ratioWindowText(ratioWindow) + ' ' + txt("countRatio") + '</span><span class="muted">' + txt("ratioLights") + ' ' + ratio.join("/") + '%</span></div></div></article>';
+      }
+
+      function renderLeafTempTrend() {
+        var crop = crops[cropKey];
+        var lt = crop.leafTemp;
+        var ratio = lt.ratios[ratioWindow];
+        var greenDeg = ratio[0] * 3.6;
+        var yellowDeg = (ratio[0] + ratio[1]) * 3.6;
+        var records = lt.records.map(function(r) {
+          var rl = light(r.score);
+          return '<div class="measureRow"><span>' + r.slot + '</span><strong>' + r.value + lt.unit + '</strong><span class="light ' + rl + '"><i class="dot"></i>' + lightText(r.score) + '</span></div>';
+        }).join("");
+        var history = lt.history.map(function(v, i) {
+          return '<div class="dayDot">D-' + (6 - i) + '<br>' + v + '</div>';
+        }).join("");
+        document.getElementById("leafTempTrend").innerHTML = '<div class="head"><div><h3>' + txt("leafTempLabel") + '</h3><span class="muted">' + txt("noCurve") + '</span></div><span class="light ' + light(lt.score) + '"><i class="dot"></i>' + lightText(lt.score) + '</span></div><div class="recordGrid">' + records + '</div><div class="leafTempRatio"><div class="ratioPie" style="--green-deg:' + greenDeg + 'deg; --yellow-deg:' + yellowDeg + 'deg"></div><div class="ratioText"><span class="muted">' + ratioWindowText(ratioWindow) + ' ' + txt("countRatio") + '</span><span class="muted">' + txt("ratioLights") + ' ' + ratio.join("/") + '%</span><span class="muted">' + txt("latestMeasurement") + ' ' + lt.value + lt.unit + ' / ' + txt("validUntil") + ' ' + lt.validUntil + '</span></div></div><strong>' + txt("sevenDayRecords") + '</strong><div class="dotHistory">' + history + '</div>';
+      }
+
       function drawChart(canvas, title, unit, ideal, real, forecast) {
         var rect = canvas.getBoundingClientRect();
         if (!rect.width || !rect.height) return;
@@ -903,10 +1057,19 @@
       }
       function drawAll() {
         var crop = crops[cropKey];
+        var leafSelected = selectedParamTrend === "leafTemp";
+        var leafTrend = document.getElementById("leafTempTrend");
+        leafTrend.classList.toggle("hidden", !leafSelected);
+        if (leafSelected) {
+          renderLeafTempTrend();
+        }
         document.querySelectorAll("[data-chart]").forEach(function(canvas) {
           if (canvas.dataset.chart === "param") {
-            var paramSeries = paramTrendSeries(cropKey, selectedParamTrend);
-            drawChart(canvas, paramSeries.label + " " + txt("ideal") + " / " + txt("realtime") + " / " + txt("forecast"), paramSeries.unit, paramSeries.ideal, paramSeries.real, paramSeries.pred);
+            canvas.classList.toggle("hidden", leafSelected);
+            if (!leafSelected) {
+              var paramSeries = paramTrendSeries(cropKey, selectedParamTrend);
+              drawChart(canvas, paramSeries.label + " " + txt("ideal") + " / " + txt("realtime") + " / " + txt("forecast"), paramSeries.unit, paramSeries.ideal, paramSeries.real, paramSeries.pred);
+            }
           } else {
             var series = indexTrendSeries(cropKey, selectedIndexTrend);
             drawChart(canvas, selectedIndexTrend + " " + txt("ideal") + " / " + txt("realtime") + " / " + txt("forecast"), "score", series.ideal, series.real, series.pred);
@@ -951,6 +1114,7 @@
       }
       function setMobilePanel(panel) {
         mobilePanel = panel;
+        document.body.dataset.mobilePanel = panel;
         document.querySelectorAll("[data-mobile-panel]").forEach(function(el) {
           el.classList.toggle("mobileActive", (el.dataset.mobilePanel || "").split(/\s+/).indexOf(panel) >= 0);
         });
