@@ -1006,6 +1006,16 @@
     if (!hasImport()) return emptyPanel("WQI 根因與燈號", "尚未計算");
     return '<article class="' + cardClass() + '"><div class="' + headClass() + '"><h2>WQI 根因與燈號</h2></div><div class="' + bodyClass() + '">' + renderLightRatio(runtime().parameters) + '</div></article>';
   }
+  function renderSelectedParameterLightPanel(selected, selectedParam) {
+    var meta = parameterMeta(selected);
+    var label = paramLabel(selectedParam, meta, selected);
+    var panelTitle = label + " " + l("燈號", "Light Status");
+    var ratioTitle = label + " " + l("燈號占比", "Light Ratio");
+    if (!hasImport()) return emptyPanel(panelTitle, "尚未計算");
+    var map = {};
+    map[selected] = selectedParam || runtimeParameter(selected);
+    return '<article class="' + cardClass() + '"><div class="' + headClass() + '"><h2>' + esc(panelTitle) + '</h2></div><div class="' + bodyClass() + '">' + renderLightRatio(map, ratioTitle) + '</div></article>';
+  }
   function renderAutoHandlingPanel() {
     var decisions = runtime().decisions || [];
     if (!hasDecisionOutput()) return emptyPanel("目前自動處理", "尚無處理動作");
@@ -1295,7 +1305,7 @@
       var item = parameterMeta(id);
       return '<option value="' + esc(id) + '"' + (id === selected ? " selected" : "") + '>' + esc(isEn() && item.labelEn ? item.labelEn : (item.label || id)) + '</option>';
     }).join("");
-    return wrap('<section class="' + cardClass() + '"><div class="' + headClass() + '"><h2>' + esc(l("參數三線", "Parameter Trends")) + '</h2><select class="paramSelector" id="mobileParamSelect">' + options + '</select></div><div class="' + bodyClass() + ' stack"><div class="mobileMetricGrid">' + metricCard(paramLabel(selectedParam, meta, selected), hasImport() ? (selectedParam.score || "--") : "--", hasImport() ? statusLabel(selectedParam, l("已計算", "Calculated")) : l("未計算", "Not calculated"), hasImport() ? (l("即時值", "Current") + ": " + (selectedParam.value || "--")) : l("等待感測資料", "Waiting for sensor data")) + metricCard("WQI", hasImport() ? runtime().wqi : "--", hasImport() ? runtimeLabel(runtime(), "wqiLabel", l("已計算", "Calculated")) : l("未計算", "Not calculated"), hasImport() ? (l("來源", "Source") + ": " + runtimeLabel(runtime(), "rootCause", l("無", "None"))) : l("等待水質資料", "Waiting for water quality data")) + '</div>' + renderChartPanel(selected, paramLabel(selectedParam, meta, selected), selectedParam) + renderRootCausePanel() + '</div></section>');
+    return wrap('<section class="' + cardClass() + '"><div class="' + headClass() + '"><h2>' + esc(l("參數三線", "Parameter Trends")) + '</h2><select class="paramSelector" id="mobileParamSelect">' + options + '</select></div><div class="' + bodyClass() + ' stack"><div class="mobileMetricGrid">' + metricCard(paramLabel(selectedParam, meta, selected), hasImport() ? (selectedParam.score || "--") : "--", hasImport() ? statusLabel(selectedParam, l("已計算", "Calculated")) : l("未計算", "Not calculated"), hasImport() ? (l("即時值", "Current") + ": " + (selectedParam.value || "--")) : l("等待感測資料", "Waiting for sensor data")) + metricCard("WQI", hasImport() ? runtime().wqi : "--", hasImport() ? runtimeLabel(runtime(), "wqiLabel", l("已計算", "Calculated")) : l("未計算", "Not calculated"), hasImport() ? (l("來源", "Source") + ": " + runtimeLabel(runtime(), "rootCause", l("無", "None"))) : l("等待水質資料", "Waiting for water quality data")) + '</div>' + renderChartPanel(selected, paramLabel(selectedParam, meta, selected), selectedParam) + renderSelectedParameterLightPanel(selected, selectedParam) + '</div></section>');
   }
 
   function bindNav() {
