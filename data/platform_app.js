@@ -72,6 +72,7 @@
       decisionHintEn: "Weak wind and high UV are included in DO risk assessment"
     },
     underwaterVision: {
+      videoUrl: "assets/videos/jnc-shrimp-ai-vision.mp4",
       imageUrl: "assets/realistic_white_shrimp.png",
       bodyLengthCm: 10.3,
       bodyWeightG: 12.7,
@@ -246,7 +247,24 @@
     "產品照片待補": "Product photo pending",
     "產品": "Product",
     "模板必配": "Template required",
-    "模板選配": "Template optional"
+    "模板選配": "Template optional",
+    "選填。可新增 NH4/NO2、濁度或其他案場參數；資料匯入時 parameterId 對應此代碼即可顯示。": "Optional. Add NH4/NO2, turbidity, or other site-specific parameters. Imported data will display when its parameterId matches this code.",
+    "預設選單": "Preset",
+    "請選擇": "Select",
+    "氨氮 / 亞硝酸 / 濁度": "Ammonia / Nitrite / Turbidity",
+    "選配": "Optional",
+    "濁度": "Turbidity",
+    "使用客戶自訂": "Using customer custom standard",
+    "選填，未填則套用系統標準": "Optional. Blank fields apply the system standard.",
+    "參數標準線自訂": "Parameter Standard Line Custom",
+    "選填。未填寫時，平台會自動套用白蝦系統標準；有填寫時，優先使用客戶自訂標準。": "Optional. Blank fields automatically apply the white shrimp system standard. Filled fields take priority as customer custom standards.",
+    "清除自訂標準": "Clear Custom Standard",
+    "理想低": "Ideal Low",
+    "理想高": "Ideal High",
+    "警戒低": "Warning Low",
+    "警戒高": "Warning High",
+    "危險低": "Danger Low",
+    "危險高": "Danger High"
   });
   function t(text) { return isEn() ? (I18N[text] || text) : text; }
   function labelOf(item) { return isEn() && item && item.labelEn ? item.labelEn : (item && item.label) || ""; }
@@ -590,14 +608,14 @@
   function renderCustomParameterSettings(cfg) {
     var rows = rawCustomParameterRows(cfg);
     if (!rows.length) rows = [{ id: "", label: "", unit: "", weight: "", sensorInstalled: true }];
-    return '<section class="standardSettings customParameterSettings"><div class="sectionTitle standardTitleRow"><div><h3>自訂感測器參數</h3><p>選填。可新增 NH4/NO2、濁度或其他案場參數；資料匯入時 parameterId 對應此代碼即可顯示。</p></div><button type="button" class="actionButton" id="addCustomParameter">新增參數</button></div>' +
+    return '<section class="standardSettings customParameterSettings"><div class="sectionTitle standardTitleRow"><div><h3>' + esc(l("自訂感測器參數", "Custom Sensor Parameters")) + '</h3><p>' + esc(l("選填。可新增 NH4/NO2、濁度或其他案場參數；資料匯入時 parameterId 對應此代碼即可顯示。", "Optional. Add NH4/NO2, turbidity, or other site-specific parameters. Imported data will display when its parameterId matches this code.")) + '</p></div><button type="button" class="actionButton" id="addCustomParameter">' + esc(l("新增參數", "Add Parameter")) + '</button></div>' +
       '<div class="customParamRows">' + rows.map(function (row, index) { return renderCustomParameterRow(row, index); }).join("") + '</div></section>';
   }
   function customParameterPresets() {
     return [
-      { id: "NH4", label: "NH4/NH3", unit: "mg/L", weight: "選配" },
-      { id: "NO2", label: "NO2", unit: "mg/L", weight: "選配" },
-      { id: "turbidityNtu", label: "濁度", unit: "NTU", weight: "選配" }
+      { id: "NH4", label: "NH4/NH3", labelEn: "NH4/NH3", unit: "mg/L", weight: "選配" },
+      { id: "NO2", label: "NO2", labelEn: "NO2", unit: "mg/L", weight: "選配" },
+      { id: "turbidityNtu", label: "濁度", labelEn: "Turbidity", unit: "NTU", weight: "選配" }
     ];
   }
   function customPresetFor(row) {
@@ -606,45 +624,45 @@
   }
   function customPresetOptions(selectedId) {
     return '<option value="">' + esc(l("請選擇", "Select")) + '</option>' + customParameterPresets().map(function (preset) {
-      return '<option value="' + esc(preset.id) + '"' + (selectedId === preset.id ? " selected" : "") + '>' + esc(preset.label) + '</option>';
+      return '<option value="' + esc(preset.id) + '"' + (selectedId === preset.id ? " selected" : "") + '>' + esc(labelOf(preset)) + '</option>';
     }).join("");
   }
   function renderCustomParameterRow(row, index) {
     var base = "customParam_" + index + "_";
     var preset = customPresetFor(row);
     return '<div class="customParamRow" data-custom-param-index="' + index + '">' +
-      '<label>預設選單<select id="' + base + 'preset" data-custom-param-preset="' + index + '">' + customPresetOptions(preset ? preset.id : "") + '</select></label>' +
-      '<label>參數代碼<input id="' + base + 'id" value="' + esc(row.id || "") + '" placeholder="NH4 / NO2 / turbidity"></label>' +
-      '<label>顯示名稱<input id="' + base + 'label" value="' + esc(row.label || "") + '" placeholder="氨氮 / 亞硝酸 / 濁度"></label>' +
-      '<label>單位<input id="' + base + 'unit" value="' + esc(row.unit || "") + '" placeholder="mg/L / NTU"></label>' +
-      '<label>權重<input id="' + base + 'weight" value="' + esc(row.weight || "") + '" placeholder="自訂"></label>' +
-      '<label>感測器<select id="' + base + 'sensorInstalled"><option value="true"' + (row.sensorInstalled === false ? "" : " selected") + '>已安裝</option><option value="false"' + (row.sensorInstalled === false ? " selected" : "") + '>未安裝</option></select></label>' +
-      '<button type="button" class="iconDanger" data-remove-custom-param="' + index + '">刪除</button>' +
+      '<label>' + esc(l("預設選單", "Preset")) + '<select id="' + base + 'preset" data-custom-param-preset="' + index + '">' + customPresetOptions(preset ? preset.id : "") + '</select></label>' +
+      '<label>' + esc(l("參數代碼", "Parameter ID")) + '<input id="' + base + 'id" value="' + esc(row.id || "") + '" placeholder="NH4 / NO2 / turbidity"></label>' +
+      '<label>' + esc(l("顯示名稱", "Display Name")) + '<input id="' + base + 'label" value="' + esc(row.label || "") + '" placeholder="' + esc(l("氨氮 / 亞硝酸 / 濁度", "Ammonia / Nitrite / Turbidity")) + '"></label>' +
+      '<label>' + esc(l("單位", "Unit")) + '<input id="' + base + 'unit" value="' + esc(row.unit || "") + '" placeholder="mg/L / NTU"></label>' +
+      '<label>' + esc(l("權重", "Weight")) + '<input id="' + base + 'weight" value="' + esc(row.weight || "") + '" placeholder="' + esc(l("自訂", "Custom")) + '"></label>' +
+      '<label>' + esc(l("感測器", "Sensor")) + '<select id="' + base + 'sensorInstalled"><option value="true"' + (row.sensorInstalled === false ? "" : " selected") + '>' + esc(l("已安裝", "Installed")) + '</option><option value="false"' + (row.sensorInstalled === false ? " selected" : "") + '>' + esc(l("未安裝", "Not installed")) + '</option></select></label>' +
+      '<button type="button" class="iconDanger" data-remove-custom-param="' + index + '">' + esc(l("刪除", "Delete")) + '</button>' +
     '</div>';
   }
   function renderStandardSettings(cfg, tpl) {
     var params = templateParameters(cfg).map(function (param) {
       var rows = customStandardRows(param.id, cfg);
       if (!rows.length) rows = [emptyStandardRow()];
-      var stateLabel = customStandardRows(param.id, cfg).length ? "使用客戶自訂" : "選填，未填則套用系統標準";
-      return '<details class="standardParam"><summary><strong>' + esc(param.label) + '</strong><span>' + esc(stateLabel) + '</span></summary><div class="standardRows">' + rows.map(function (row, index) {
+      var stateLabel = customStandardRows(param.id, cfg).length ? l("使用客戶自訂", "Using customer custom standard") : l("選填，未填則套用系統標準", "Optional. Blank fields apply the system standard.");
+      return '<details class="standardParam"><summary><strong>' + esc(labelOf(param) || param.id) + '</strong><span>' + esc(stateLabel) + '</span></summary><div class="standardRows">' + rows.map(function (row, index) {
         return renderStandardRow(param, row, index);
       }).join("") + '</div></details>';
     }).join("");
-    return '<section class="standardSettings"><div class="sectionTitle standardTitleRow"><div><h3>參數標準線自訂</h3><p>選填。未填寫時，平台會自動套用白蝦系統標準；有填寫時，優先使用客戶自訂標準。</p></div><button type="button" class="actionButton danger" id="clearParameterStandards">清除自訂標準</button></div>' + params + '</section>';
+    return '<section class="standardSettings"><div class="sectionTitle standardTitleRow"><div><h3>' + esc(l("參數標準線自訂", "Parameter Standard Line Custom")) + '</h3><p>' + esc(l("選填。未填寫時，平台會自動套用白蝦系統標準；有填寫時，優先使用客戶自訂標準。", "Optional. Blank fields automatically apply the white shrimp system standard. Filled fields take priority as customer custom standards.")) + '</p></div><button type="button" class="actionButton danger" id="clearParameterStandards">' + esc(l("清除自訂標準", "Clear Custom Standard")) + '</button></div>' + params + '</section>';
   }
   function renderStandardRow(param, row, index) {
     var base = 'std_' + param.id + '_' + index + '_';
     return '<div class="standardRow" data-standard-param="' + esc(param.id) + '" data-standard-index="' + index + '">' +
-      '<label>時段<input id="' + base + 'label" value="' + esc(row.label || "") + '"></label>' +
-      '<label>開始<input type="time" id="' + base + 'start" value="' + esc(row.start || "") + '"></label>' +
-      '<label>結束<input type="time" id="' + base + 'end" value="' + esc(row.end || "") + '"></label>' +
-      '<label>理想低<input type="number" step="0.1" id="' + base + 'idealMin" value="' + esc(row.idealMin == null ? "" : row.idealMin) + '"></label>' +
-      '<label>理想高<input type="number" step="0.1" id="' + base + 'idealMax" value="' + esc(row.idealMax == null ? "" : row.idealMax) + '"></label>' +
-      '<label>警戒低<input type="number" step="0.1" id="' + base + 'warningMin" value="' + esc(row.warningMin == null ? "" : row.warningMin) + '"></label>' +
-      '<label>警戒高<input type="number" step="0.1" id="' + base + 'warningMax" value="' + esc(row.warningMax == null ? "" : row.warningMax) + '"></label>' +
-      '<label>危險低<input type="number" step="0.1" id="' + base + 'dangerMin" value="' + esc(row.dangerMin == null ? "" : row.dangerMin) + '"></label>' +
-      '<label>危險高<input type="number" step="0.1" id="' + base + 'dangerMax" value="' + esc(row.dangerMax == null ? "" : row.dangerMax) + '"></label>' +
+      '<label>' + esc(l("時段", "Time Window")) + '<input id="' + base + 'label" value="' + esc(row.label || "") + '"></label>' +
+      '<label>' + esc(l("開始", "Start")) + '<input type="time" id="' + base + 'start" value="' + esc(row.start || "") + '"></label>' +
+      '<label>' + esc(l("結束", "End")) + '<input type="time" id="' + base + 'end" value="' + esc(row.end || "") + '"></label>' +
+      '<label>' + esc(l("理想低", "Ideal Low")) + '<input type="number" step="0.1" id="' + base + 'idealMin" value="' + esc(row.idealMin == null ? "" : row.idealMin) + '"></label>' +
+      '<label>' + esc(l("理想高", "Ideal High")) + '<input type="number" step="0.1" id="' + base + 'idealMax" value="' + esc(row.idealMax == null ? "" : row.idealMax) + '"></label>' +
+      '<label>' + esc(l("警戒低", "Warning Low")) + '<input type="number" step="0.1" id="' + base + 'warningMin" value="' + esc(row.warningMin == null ? "" : row.warningMin) + '"></label>' +
+      '<label>' + esc(l("警戒高", "Warning High")) + '<input type="number" step="0.1" id="' + base + 'warningMax" value="' + esc(row.warningMax == null ? "" : row.warningMax) + '"></label>' +
+      '<label>' + esc(l("危險低", "Danger Low")) + '<input type="number" step="0.1" id="' + base + 'dangerMin" value="' + esc(row.dangerMin == null ? "" : row.dangerMin) + '"></label>' +
+      '<label>' + esc(l("危險高", "Danger High")) + '<input type="number" step="0.1" id="' + base + 'dangerMax" value="' + esc(row.dangerMax == null ? "" : row.dangerMax) + '"></label>' +
     '</div>';
   }
   function renderStockingDensityPreview(cfg) {
@@ -817,7 +835,7 @@
   function renderOverview() {
     if (!isMobile()) return '<div class="desktopOverview"><div class="desktopColumn">' + renderSitePanel() + renderWqiPanel() + '</div><div class="desktopColumn desktopMain">' + renderGiPanel() + renderVisionPanel() + '</div><div class="desktopColumn">' + renderAiPanel() + renderWeatherPanel() + renderDeviceStatusPanel() + '</div></div>';
     var selected = config().mobileOverviewMetric === "GI" ? "GI" : "WQI";
-    return wrap('<section class="' + cardClass() + '"><div class="' + headClass() + '"><h2>' + esc(l("總覽", "Overview")) + '</h2><span class="badge">' + esc(config().pondId || l("未設定", "Not set")) + '</span></div><div class="' + bodyClass() + ' stack"><div class="mobileMetricGrid">' + metricCard("WQI", hasImport() ? runtime().wqi : "--", hasImport() ? runtimeLabel(runtime(), "wqiLabel", l("已計算", "Calculated")) : l("未計算", "Not calculated"), hasImport() ? l("扣分來源", "Deduction Source") + ": " + runtimeLabel(runtime(), "rootCause", l("無", "None")) : l("等待水質資料", "Waiting for water quality data"), selected === "WQI", "WQI") + metricCard("GI", hasImport() ? (runtime().giScore || "--") : "--", hasImport() ? l("資料待接", "Data pending") : l("未計算", "Not calculated"), giNote(), selected === "GI", "GI") + '</div>' + renderAiSummary() + renderMobileOverviewDetail(selected) + '</div></section>');
+    return wrap('<section class="' + cardClass() + '"><div class="' + headClass() + '"><h2>' + esc(l("總覽", "Overview")) + '</h2><span class="badge">' + esc(config().pondId || l("未設定", "Not set")) + '</span></div><div class="' + bodyClass() + ' stack"><div class="mobileMetricGrid">' + metricCard("WQI", hasImport() ? runtime().wqi : "--", hasImport() ? runtimeLabel(runtime(), "wqiLabel", l("已計算", "Calculated")) : l("未計算", "Not calculated"), hasImport() ? l("扣分來源", "Deduction Source") + ": " + runtimeLabel(runtime(), "rootCause", l("無", "None")) : l("等待水質資料", "Waiting for water quality data"), selected === "WQI", "WQI") + metricCard("GI", hasImport() ? (runtime().giScore || "--") : "--", hasImport() ? l("資料待接", "Data pending") : l("未計算", "Not calculated"), giNote(), selected === "GI", "GI") + '</div>' + renderMobileOverviewDetail(selected) + renderAiSummary() + '</div></section>');
   }
   function renderDemoToggle() {
     var active = isDemoMode();
@@ -857,7 +875,7 @@
   function renderMobileGiDetail() {
     var batch = runtime().batchTiming || {};
     var cfg = config();
-    return '<div class="mobileOverviewDetail"><article class="' + cardClass() + '"><div class="' + headClass() + '"><h2>GI 成長資料</h2></div><div class="' + bodyClass() + ' stack"><p>預估收成：剩餘 ' + esc(hasImport() && batch.daysToHarvest != null ? batch.daysToHarvest : "--") + ' 天</p>' + renderCultureProgress(cfg, runtime()) + '<p class="muted">成長影像與估重資料匯入後，GI 會同步更新。</p></div></article>' + renderChartPanel("GI", "GI 成長三線", { score: runtime().giScore }) + renderVisionPanel() + '</div>';
+    return '<div class="mobileOverviewDetail">' + renderVisionPanel() + '<article class="' + cardClass() + '"><div class="' + headClass() + '"><h2>GI 成長資料</h2></div><div class="' + bodyClass() + ' stack"><p>預估收成：剩餘 ' + esc(hasImport() && batch.daysToHarvest != null ? batch.daysToHarvest : "--") + ' 天</p>' + renderCultureProgress(cfg, runtime()) + '<p class="muted">成長影像與估重資料匯入後，GI 會同步更新。</p></div></article>' + renderChartPanel("GI", "GI 成長三線", { score: runtime().giScore }) + '</div>';
   }
   function giNote() {
     var batch = runtime().batchTiming || {};
@@ -901,8 +919,9 @@
   }
   function renderVisionPanel() {
     var vision = runtime().underwaterVision || runtime().vision || {};
+    var videoUrl = hasImport() ? resolveAssetUrl(vision.videoUrl || vision.clipUrl || "") : "";
     var imageUrl = hasImport() ? resolveAssetUrl(vision.imageUrl || vision.frameUrl || vision.previewUrl || "") : "";
-    var media = imageUrl
+    var media = videoUrl ? '<video src="' + esc(videoUrl) + '" autoplay muted loop playsinline controls preload="metadata"></video>' : imageUrl
       ? '<img src="' + esc(imageUrl) + '" alt="水下即時影像">'
       : '<div class="visionPlaceholder"><strong>尚未匯入影像資料</strong></div>';
     return '<section class="panel"><div class="panelHeader"><h2>水下影像 AI</h2></div><div class="panelBody desktopVision"><div class="visionBox">' + media + '</div><div class="stack"><p>AI 體長：' + esc(hasImport() && vision.bodyLengthCm != null ? vision.bodyLengthCm + " cm" : "--") + '</p><p>轉換體重：' + esc(hasImport() && vision.bodyWeightG != null ? vision.bodyWeightG + " g" : "--") + '</p><p>估計尾數：' + esc(hasImport() && vision.estimatedCountPerLb != null ? vision.estimatedCountPerLb + " 尾/磅" : "--") + '</p><p>影像可信度：' + esc(hasImport() && vision.confidencePct != null ? vision.confidencePct + "%" : "等待資料") + '</p></div></div></section>';
