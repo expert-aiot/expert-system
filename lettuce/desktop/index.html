@@ -243,6 +243,8 @@
     .paramValue { font-size: 21px; font-weight: 900; color: #fff; line-height: 1; }
     .leafTempCard { grid-column: 1 / -1; align-content: start; gap: 8px; min-height: 132px; }
     .leafTempTop { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: start; }
+    .leafTempBody { display: grid; grid-template-columns: minmax(230px, 1fr) 150px; gap: 10px; align-items: stretch; }
+    .leafTempMain { display: grid; gap: 8px; min-width: 0; }
     .leafMeta { display: grid; gap: 3px; color: var(--muted); font-size: 12px; line-height: 1.35; }
     .measureRows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
     .measureRow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 7px; align-items: center; min-width: 0; border: 1px solid rgba(85, 220, 255, .25); border-radius: 8px; padding: 6px; background: rgba(4, 17, 30, .42); font-size: 12px; }
@@ -250,9 +252,9 @@
     .miniDot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); box-shadow: 0 0 14px rgba(53,230,125,.34); }
     .miniDot.yellow { background: var(--yellow); box-shadow: 0 0 14px rgba(255,209,102,.34); }
     .miniDot.red { background: var(--red); box-shadow: 0 0 14px rgba(255,91,122,.34); }
-    .thermalThumb { width: 58px; height: 38px; border-radius: 8px; border: 1px solid rgba(255, 209, 102, .48); background: radial-gradient(circle at 62% 42%, rgba(255,91,122,.95), transparent 24%), radial-gradient(circle at 38% 58%, rgba(255,209,102,.9), transparent 28%), linear-gradient(135deg, #11395d, #26765c 48%, #061827); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12), 0 12px 22px rgba(0,0,0,.2); }
-    .leafTempRatio { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 8px; align-items: center; }
-    .leafTempRatio .ratioPie { width: 38px; }
+    .thermalThumb { width: 52px; height: 36px; border-radius: 8px; border: 1px solid rgba(255, 209, 102, .48); background: radial-gradient(circle at 62% 42%, rgba(255,91,122,.95), transparent 24%), radial-gradient(circle at 38% 58%, rgba(255,209,102,.9), transparent 28%), linear-gradient(135deg, #11395d, #26765c 48%, #061827); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12), 0 12px 22px rgba(0,0,0,.2); }
+    .leafTempRatio { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 8px; align-items: center; align-content: center; border: 1px solid rgba(85, 220, 255, .25); border-radius: 8px; padding: 8px; background: rgba(4,17,30,.35); }
+    .leafTempRatio .ratioPie { width: 34px; }
     .chartGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .chart {
       width: 100%;
@@ -270,6 +272,8 @@
     .dayDot { display: grid; place-items: center; min-height: 34px; border: 1px solid rgba(85,220,255,.25); border-radius: 8px; background: rgba(4,17,30,.38); color: #dff8ff; font-size: 12px; font-weight: 800; }
     .cultivationLayout { display: grid; grid-template-columns: 320px 400px 420px; gap: 12px; align-items: stretch; justify-content: start; }
     .imageColumn { min-width: 0; display: flex; justify-content: flex-start; }
+    .lgiColumn { min-width: 0; display: grid; gap: 8px; align-content: start; }
+    .lgiRatioToolbar { margin-bottom: 0; }
     .lgiPanel { display: grid; gap: 10px; align-content: start; background: rgba(7, 24, 39, .86); }
     .lgiPanel .visionSummary { grid-template-columns: 1fr; margin-top: 0; }
     .scene {
@@ -396,6 +400,7 @@
     .ruleCard strong { color: #fff; display: block; margin-bottom: 3px; }
     .ruleBadge { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 999px; border: 1px solid var(--line-soft); color: #fff; font-size: 12px; font-weight: 900; background: rgba(85, 220, 255, .12); }
     .ruleCard.warn .ruleBadge { border-color: var(--yellow); background: rgba(255, 209, 102, .2); }
+    .mobileLiveAlerts { display: none !important; }
     .hidden { display: none !important; }
     .mobileOnlyPanel { display: none; margin-top: 14px; }
     .mobileTabs { display: none; }
@@ -405,12 +410,11 @@
     body.mobilePreview .mobileOnlyPanel.mobileActive { display: block; }
     body.mobilePreview .mobileOnlyPanel .liveReadings { height: auto; }
     body.mobilePreview .cultivationLayout > .liveReadings { display: none; }
-    body.mobilePreview .mobileLiveAlerts { display: grid; gap: 8px; }
+    body.mobilePreview .mobileLiveAlerts { display: grid !important; gap: 8px; }
     body.mobilePreview[data-mobile-panel="rules"] .bottomGrid.mobileActive .panel:first-child { display: none; }
     body.mobilePreview .bottomGrid .panelHead { display: grid; grid-template-columns: 1fr; justify-items: start; gap: 8px; }
-    body.mobilePreview[data-mobile-panel="rules"] .shell { width: min(430px, calc(100% - 18px)); padding-left: 10px; padding-right: 10px; }
-    body.mobilePreview[data-mobile-panel="rules"] .bottomGrid { gap: 0; }
-    body.mobilePreview[data-mobile-panel="rules"] .bottomGrid .panel:last-child { width: 100%; }
+    body.mobilePreview[data-mobile-panel="rules"] .bottomGrid { grid-template-columns: 1fr; gap: 0; width: 100%; }
+    body.mobilePreview[data-mobile-panel="rules"] .bottomGrid .panel:last-child { grid-column: 1 / -1; width: 100%; }
     body.mobilePreview[data-mobile-panel="rules"] .bottomGrid .panelHead { padding: 12px; }
     body.mobilePreview[data-mobile-panel="rules"] #rulesTitle { font-size: 22px; white-space: nowrap; line-height: 1.2; }
     body.mobilePreview[data-mobile-panel="rules"] #rulesPill { min-height: 30px; padding-top: 4px; padding-bottom: 4px; }
@@ -451,14 +455,31 @@
     body.mobilePreview .ratioToolbar { align-items: stretch; flex-direction: column; }
     body.mobilePreview .paramGrid, body.mobilePreview .liveReadings { grid-template-columns: 1fr; }
     body.mobilePreview .cultivationLayout { grid-template-columns: 1fr; }
-    body.mobilePreview .lgiPanel { order: 1; }
-    body.mobilePreview .mobileLiveAlerts { order: 2; }
-    body.mobilePreview .imageColumn { order: 3; }
+    body.mobilePreview .imageColumn { order: 1; }
+    body.mobilePreview .lgiColumn { order: 2; }
+    body.mobilePreview .mobileLiveAlerts { order: 3; }
     body.mobilePreview .scoreRow { grid-template-columns: 82px 1fr; }
     body.mobilePreview .ring { width: 82px; }
     body.mobilePreview .ring b { font-size: 25px; }
     body.mobilePreview .ratioWrap { grid-template-columns: 48px minmax(0, 1fr); }
     body.mobilePreview .ratioPie { width: 48px; }
+    body.mobilePreview .leafTempBody { grid-template-columns: 1fr; }
+    body.mobilePreview .leafTempRatio { grid-template-columns: 46px minmax(0, 1fr); column-gap: 14px; width: 100%; }
+    body.mobilePreview .leafTempRatio .ratioPie { width: 46px; }
+    body.mobilePreview .leafTempTrend .measureRow {
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 4px 6px;
+      align-items: start;
+    }
+    body.mobilePreview .leafTempTrend .measureRow .light {
+      grid-column: 1 / -1;
+      justify-self: start;
+      min-height: 24px;
+      padding: 3px 7px;
+      font-size: 11px;
+      line-height: 1;
+    }
+    body.mobilePreview .leafTempTrend .measureRow .dot { width: 8px; height: 8px; }
     body.mobilePreview .scene { height: auto; min-height: 0; aspect-ratio: 4 / 5; }
     body.mobilePreview .node { min-width: 96px; font-size: 12px; padding: 7px; }
     body.mobilePreview .node strong { font-size: 14px; }
@@ -477,6 +498,7 @@
     @media (max-width: 640px) {
       .shell { padding: 12px; overflow-x: hidden; }
       .windowSwitch { flex-wrap: wrap; }
+      .leafTempBody { grid-template-columns: 1fr; }
       .pill, .seg button, .toolButton, .tab, .mobileTab { padding-left: 10px; padding-right: 10px; }
       .light { font-size: 12px; padding-left: 8px; padding-right: 8px; }
       .title { font-size: 19px; }
@@ -510,10 +532,8 @@
       <button class="placeholder" type="button" data-placeholder-crop="spinach" aria-disabled="true"></button>
     </nav>
 
-
-
-    <div class="ratioToolbar">
-      <span class="muted" id="ratioWindowLabel"></span>
+    <div class="ratioToolbar indicesRatioToolbar" data-mobile-panel="indices">
+      <span class="muted ratioWindowLabel"></span>
       <div class="windowSwitch" aria-label="light ratio time window">
         <button class="active" type="button" data-ratio-window="24hr"></button>
         <button type="button" data-ratio-window="7d"></button>
@@ -521,9 +541,9 @@
       </div>
     </div>
 
-    <section class="grid overview mobileActive" id="indices" data-mobile-panel="indices"></section>
+    <section class="grid overview" id="indices" data-mobile-panel="indices"></section>
 
-    <section class="grid main" style="margin-top:14px;" data-mobile-panel="livePanel">
+    <section class="grid main mobileActive" style="margin-top:14px;" data-mobile-panel="livePanel">
       <article class="panel">
         <div class="panelHead">
           <h2 id="sceneTitle"></h2>
@@ -534,7 +554,17 @@
         </div>
         <div class="panelBody" id="liveView">
           <div class="cultivationLayout">
-            <article class="card indexCard lgiPanel" id="lgiCard"></article>
+            <div class="lgiColumn">
+              <div class="ratioToolbar lgiRatioToolbar">
+                <span class="muted ratioWindowLabel"></span>
+                <div class="windowSwitch" aria-label="light ratio time window">
+                  <button class="active" type="button" data-ratio-window="24hr"></button>
+                  <button type="button" data-ratio-window="7d"></button>
+                  <button type="button" data-ratio-window="30d"></button>
+                </div>
+              </div>
+              <article class="card indexCard lgiPanel" id="lgiCard"></article>
+            </div>
             <div class="imageColumn">
               <div class="scene" id="scene">
                 <video class="scanVideo scanVideoFill" id="scanVideoFill" autoplay muted loop playsinline preload="metadata" aria-hidden="true"></video>
@@ -595,8 +625,8 @@
     </section>
 
     <nav class="mobileTabs">
-      <button class="mobileTab active" type="button" data-mobile-tab="indices"></button>
-      <button class="mobileTab" type="button" data-mobile-tab="livePanel"></button>
+      <button class="mobileTab active" type="button" data-mobile-tab="livePanel"></button>
+      <button class="mobileTab" type="button" data-mobile-tab="indices"></button>
       <button class="mobileTab" type="button" data-mobile-tab="params"></button>
       <button class="mobileTab" type="button" data-mobile-tab="rules"></button>
     </nav>
@@ -608,7 +638,7 @@
       var cropKey = "lettuce";
       var view = "live";
       var ratioWindow = "24hr";
-      var mobilePanel = "indices";
+      var mobilePanel = "livePanel";
       var selectedParamTrend = "EC";
       var selectedIndexTrend = "RHI";
       var i18n = {
@@ -908,10 +938,10 @@
         document.querySelector("[data-placeholder-crop='spinach']").textContent = txt("spinach");
         document.querySelector("[data-view='live']").textContent = txt("live");
         document.querySelector("[data-view='trend']").textContent = txt("trend");
-        document.getElementById("ratioWindowLabel").textContent = txt("ratioWindowLabel");
-        document.querySelector("[data-ratio-window='24hr']").textContent = txt("window24hr");
-        document.querySelector("[data-ratio-window='7d']").textContent = txt("window7d");
-        document.querySelector("[data-ratio-window='30d']").textContent = txt("window30d");
+        document.querySelectorAll(".ratioWindowLabel").forEach(function(el){ el.textContent = txt("ratioWindowLabel"); });
+        document.querySelectorAll("[data-ratio-window='24hr']").forEach(function(b){ b.textContent = txt("window24hr"); });
+        document.querySelectorAll("[data-ratio-window='7d']").forEach(function(b){ b.textContent = txt("window7d"); });
+        document.querySelectorAll("[data-ratio-window='30d']").forEach(function(b){ b.textContent = txt("window30d"); });
         document.querySelectorAll("[data-ratio-window]").forEach(function(b){ b.classList.toggle("active", b.dataset.ratioWindow === ratioWindow); });
         document.getElementById("sceneTitle").textContent = txt("sceneTitle");
         document.getElementById("paramTrendLabel").textContent = lang === "zh" ? "參數" : "Parameter";
@@ -923,9 +953,9 @@
         document.getElementById("mobileParamsTitle").textContent = txt("mobileParamsTitle");
         document.getElementById("rulesTitle").textContent = txt("rulesTitle");
         document.getElementById("rulesPill").textContent = txt("rulesPill");
+        document.querySelector("[data-mobile-tab='livePanel']").textContent = txt("tabLive");
         document.querySelector("[data-mobile-tab='indices']").textContent = txt("tabIndex");
         document.querySelector("[data-mobile-tab='params']").textContent = txt("tabParam");
-        document.querySelector("[data-mobile-tab='livePanel']").textContent = txt("tabLive");
         document.querySelector("[data-mobile-tab='rules']").textContent = txt("tabRules");
         document.getElementById("indices").innerHTML = ["RHI","PMI","DLI-CR"].map(function(code) {
           var score = crop.index[code];
@@ -935,7 +965,7 @@
           var yellowDeg = (ratio[0] + ratio[1]) * 3.6;
           var sub = indexSub(code);
           var note = code === "RHI" ? txt("rhiAdvice") : code === "PMI" ? txt(crop.leafTemp.pmiNoteKey) : code === "DLI-CR" ? txt("dliWarn") : txt("lgiOk");
-          return '<article class="card indexCard"><div class="head"><div class="indexName"><strong>' + code + '</strong><span class="muted">' + sub + '</span></div><span class="light ' + l + '"><i class="dot"></i>' + lightText(score) + '</span></div><div class="scoreRow"><div class="ring ' + ringClass(score) + '" style="--pct:' + score + '%"><b>' + score + '</b></div><div class="ratio"><div class="ratioWrap"><div class="ratioPie" style="--green-deg:' + greenDeg + 'deg; --yellow-deg:' + yellowDeg + 'deg"></div><div class="ratioText"><span class="muted">' + (txt("ratio24h") || "24h") + '</span><span class="muted">' + txt("ratioLights") + ' ' + ratio.join("/") + '%</span><span class="muted">' + note + '</span></div></div></div></div></article>';
+          return '<article class="card indexCard"><div class="head"><div class="indexName"><strong>' + code + '</strong><span class="muted">' + sub + '</span></div><span class="light ' + l + '"><i class="dot"></i>' + lightText(score) + '</span></div><div class="scoreRow"><div class="ring ' + ringClass(score) + '" style="--pct:' + score + '%"><b>' + score + '</b></div><div class="ratio"><div class="ratioWrap"><div class="ratioPie" style="--green-deg:' + greenDeg + 'deg; --yellow-deg:' + yellowDeg + 'deg"></div><div class="ratioText"><span class="muted">' + ratioWindowText(ratioWindow) + '</span><span class="muted">' + txt("ratioLights") + ' ' + ratio.join("/") + '%</span><span class="muted">' + note + '</span></div></div></div></div></article>';
         }).join("");
         var readingsHtml = renderLiveReadings(crop);
         document.getElementById("liveReadings").innerHTML = readingsHtml;
@@ -958,7 +988,7 @@
         var lgiRatio = crop.ratios[ratioWindow].LGI;
         var lgiGreenDeg = lgiRatio[0] * 3.6;
         var lgiYellowDeg = (lgiRatio[0] + lgiRatio[1]) * 3.6;
-        document.getElementById("lgiCard").innerHTML = '<div class="head"><div class="indexName"><strong>LGI</strong><span class="muted">' + txt("lgiSub") + '</span></div><span class="light ' + lgiLight + '"><i class="dot"></i>' + lightText(lgiScore) + '</span></div><div class="scoreRow"><div class="ring ' + ringClass(lgiScore) + '" style="--pct:' + lgiScore + '%"><b>' + lgiScore + '</b></div><div class="ratio"><div class="ratioWrap"><div class="ratioPie" style="--green-deg:' + lgiGreenDeg + 'deg; --yellow-deg:' + lgiYellowDeg + 'deg"></div><div class="ratioText"><span class="muted">' + (txt("ratio24h") || "24h") + '</span><span class="muted">' + txt("ratioLights") + ' ' + lgiRatio.join("/") + '%</span><span class="muted">' + txt("lgiOk") + '</span></div></div></div></div><div class="visionSummary">' + crop.visionKeys.map(function(key) {
+        document.getElementById("lgiCard").innerHTML = '<div class="head"><div class="indexName"><strong>LGI</strong><span class="muted">' + txt("lgiSub") + '</span></div><span class="light ' + lgiLight + '"><i class="dot"></i>' + lightText(lgiScore) + '</span></div><div class="scoreRow"><div class="ring ' + ringClass(lgiScore) + '" style="--pct:' + lgiScore + '%"><b>' + lgiScore + '</b></div><div class="ratio"><div class="ratioWrap"><div class="ratioPie" style="--green-deg:' + lgiGreenDeg + 'deg; --yellow-deg:' + lgiYellowDeg + 'deg"></div><div class="ratioText"><span class="muted">' + ratioWindowText(ratioWindow) + '</span><span class="muted">' + txt("ratioLights") + ' ' + lgiRatio.join("/") + '%</span><span class="muted">' + txt("lgiOk") + '</span></div></div></div></div><div class="visionSummary">' + crop.visionKeys.map(function(key) {
           return '<span>' + txt(key) + '</span>';
         }).join("") + '</div><div class="growthFusionNote">' + txt("growthFusionNote").replace("{day}", crop.dap) + '</div>';
         var secondAlert = crop.alertType === "kale" ? txt("alertKale") : txt("alertTipburn");
@@ -999,7 +1029,7 @@
           var thermal = r.thermal ? '<span class="muted">' + txt("thermalImage") + '</span>' : '<span class="muted">--</span>';
           return '<div class="measureRow"><span>' + r.slot + '</span><strong>' + r.value + lt.unit + '</strong><span class="miniDot ' + (rl === "green" ? "" : rl) + '"></span>' + thermal + '</div>';
         }).join("");
-        return '<article class="paramCard leafTempCard"><div class="leafTempTop"><div><div class="head"><h3>' + txt("leafTempLabel") + '</h3><span class="light ' + l + '"><i class="dot"></i>' + lightText(lt.score) + '</span></div><div class="paramValue">' + lt.value + ' <span class="muted">' + lt.unit + '</span></div><div class="leafMeta"><span>' + txt("measuredAt").replace("{time}", lt.measuredAt) + '</span><span>' + txt("validUntil") + ' ' + lt.validUntil + '</span></div></div><div class="thermalThumb" title="' + txt("thermalImage") + '"></div></div><div class="measureRows">' + rows + '</div><div class="leafTempRatio"><div class="ratioPie" style="--green-deg:' + greenDeg + 'deg; --yellow-deg:' + yellowDeg + 'deg"></div><div class="ratioText"><span class="muted">' + ratioWindowText(ratioWindow) + ' ' + txt("countRatio") + '</span><span class="muted">' + txt("ratioLights") + ' ' + ratio.join("/") + '%</span></div></div></article>';
+        return '<article class="paramCard leafTempCard"><div class="leafTempBody"><div class="leafTempMain"><div class="leafTempTop"><div><div class="head"><h3>' + txt("leafTempLabel") + '</h3><span class="light ' + l + '"><i class="dot"></i>' + lightText(lt.score) + '</span></div><div class="paramValue">' + lt.value + ' <span class="muted">' + lt.unit + '</span></div><div class="leafMeta"><span>' + txt("measuredAt").replace("{time}", lt.measuredAt) + '</span><span>' + txt("validUntil") + ' ' + lt.validUntil + '</span></div></div><div class="thermalThumb" title="' + txt("thermalImage") + '"></div></div><div class="measureRows">' + rows + '</div></div><div class="leafTempRatio"><div class="ratioPie" style="--green-deg:' + greenDeg + 'deg; --yellow-deg:' + yellowDeg + 'deg"></div><div class="ratioText"><span class="muted">' + ratioWindowText(ratioWindow) + ' ' + txt("countRatio") + '</span><span class="muted">' + txt("ratioLights") + ' ' + ratio.join("/") + '%</span></div></div></div></article>';
       }
 
       function renderLeafTempTrend() {
@@ -1015,7 +1045,7 @@
         var history = lt.history.map(function(v, i) {
           return '<div class="dayDot">D-' + (6 - i) + '<br>' + v + '</div>';
         }).join("");
-        document.getElementById("leafTempTrend").innerHTML = '<div class="head"><div><h3>' + txt("leafTempLabel") + '</h3><span class="muted">' + txt("noCurve") + '</span></div><span class="light ' + light(lt.score) + '"><i class="dot"></i>' + lightText(lt.score) + '</span></div><div class="recordGrid">' + records + '</div><div class="leafTempRatio"><div class="ratioPie" style="--green-deg:' + greenDeg + 'deg; --yellow-deg:' + yellowDeg + 'deg"></div><div class="ratioText"><span class="muted">' + ratioWindowText(ratioWindow) + ' ' + txt("countRatio") + '</span><span class="muted">' + txt("ratioLights") + ' ' + ratio.join("/") + '%</span><span class="muted">' + txt("latestMeasurement") + ' ' + lt.value + lt.unit + ' / ' + txt("validUntil") + ' ' + lt.validUntil + '</span></div></div><strong>' + txt("sevenDayRecords") + '</strong><div class="dotHistory">' + history + '</div>';
+        document.getElementById("leafTempTrend").innerHTML = '<div class="head"><div><h3>' + txt("leafTempLabel") + '</h3><span class="muted">' + txt("noCurve") + '</span></div><span class="light ' + light(lt.score) + '"><i class="dot"></i>' + lightText(lt.score) + '</span></div><div class="recordGrid">' + records + '</div><span class="muted">' + txt("latestMeasurement") + ' ' + lt.value + lt.unit + ' / ' + txt("validUntil") + ' ' + lt.validUntil + '</span><strong>' + txt("sevenDayRecords") + '</strong><div class="dotHistory">' + history + '</div>';
       }
 
       function drawChart(canvas, title, unit, ideal, real, forecast) {
