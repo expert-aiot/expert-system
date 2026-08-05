@@ -150,6 +150,16 @@
       padding: 13px 15px;
       border-bottom: 1px solid var(--line-soft);
     }
+    .panelHead h2 {
+      min-width: 0;
+      font-size: clamp(18px, 1.7vw, 24px);
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+    .panelHead .light,
+    .panelHead .pill {
+      flex: 0 0 auto;
+    }
     .panelBody { padding: 14px 15px; }
     h1, h2, h3, p { margin: 0; }
     h2, h3 { color: #8de6ff; letter-spacing: 0; }
@@ -411,13 +421,13 @@
     body.mobilePreview .mobileOnlyPanel .liveReadings { height: auto; }
     body.mobilePreview .cultivationLayout > .liveReadings { display: none; }
     body.mobilePreview .mobileLiveAlerts { display: grid !important; gap: 8px; }
-    body.mobilePreview[data-mobile-panel="rules"] .bottomGrid.mobileActive .panel:first-child { display: none; }
-    body.mobilePreview .bottomGrid .panelHead { display: grid; grid-template-columns: 1fr; justify-items: start; gap: 8px; }
-    body.mobilePreview[data-mobile-panel="rules"] .bottomGrid { grid-template-columns: 1fr; gap: 0; width: 100%; }
-    body.mobilePreview[data-mobile-panel="rules"] .bottomGrid .panel:last-child { grid-column: 1 / -1; width: 100%; }
-    body.mobilePreview[data-mobile-panel="rules"] .bottomGrid .panelHead { padding: 12px; }
-    body.mobilePreview[data-mobile-panel="rules"] #rulesTitle { font-size: 22px; white-space: nowrap; line-height: 1.2; }
-    body.mobilePreview[data-mobile-panel="rules"] #rulesPill { min-height: 30px; padding-top: 4px; padding-bottom: 4px; }
+    body.mobilePreview .bottomGrid .panelHead { display: flex; align-items: center; justify-content: space-between; align-content: flex-start; flex-wrap: wrap; gap: 8px; }
+    body.mobilePreview[data-mobile-panel="rules"] .bottomGrid { grid-template-columns: 1fr; gap: 10px; width: 100%; }
+    body.mobilePreview[data-mobile-panel="rules"] .bottomGrid .panelHead { min-height: 80px; padding: 12px; }
+    body.mobilePreview[data-mobile-panel="rules"] .bottomGrid .panelHead h2 { flex: 1 0 100%; font-size: 20px; }
+    body.mobilePreview[data-mobile-panel="rules"] #rulesTitle { font-size: 18px; white-space: nowrap; line-height: 1.2; }
+    body.mobilePreview[data-mobile-panel="rules"] #rulesPill { min-height: 28px; padding: 4px 8px; font-size: 12px; }
+    body.mobilePreview[data-mobile-panel="rules"] #alertCount { font-size: 12px; }
     body.mobilePreview[data-mobile-panel="rules"] .ruleGrid { gap: 10px; padding: 12px; }
     body.mobilePreview[data-mobile-panel="rules"] .ruleCard { grid-template-columns: 1fr; gap: 8px; padding: 12px; }
     body.mobilePreview[data-mobile-panel="rules"] .ruleBadge { width: max-content; min-width: 30px; height: 26px; padding: 0 8px; }
@@ -489,6 +499,7 @@
     body.mobilePreview .visionSummary { grid-template-columns: 1fr; }
     @media (max-width: 1120px) {
       .top, .overview, .main, .bottomGrid, .cultivationLayout, .chartGrid, .trendSelectorGrid, .ruleGrid { grid-template-columns: 1fr; }
+      body.mobilePreview[data-mobile-panel="rules"] .bottomGrid { grid-template-columns: 1fr; }
       .top > *, .panel, .card, .paramCard, .ratioToolbar { min-width: 0; }
       .paramGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .meta { justify-content: flex-start; }
@@ -572,7 +583,6 @@
               </div>
             </div>
             <div class="liveReadings" id="liveReadings"></div>
-            <div class="mobileLiveAlerts sideList" id="mobileLiveAlerts"></div>
           </div>
         </div>
         <div class="panelBody hidden" id="trendView">
@@ -614,13 +624,12 @@
 
     <section class="grid bottomGrid" data-mobile-panel="rules">
       <section class="panel">
-        <div class="panelHead"><h2 id="alertTitle"></h2><span class="light yellow"><i class="dot"></i><span id="alertCount"></span></span></div>
-        <div class="panelBody sideList" id="alerts"></div>
-      </section>
-
-      <section class="panel">
         <div class="panelHead"><h2 id="rulesTitle"></h2><span class="pill" id="rulesPill"></span></div>
         <div class="panelBody grid ruleGrid" id="rules"></div>
+      </section>
+      <section class="panel">
+        <div class="panelHead"><h2 id="alertTitle"></h2><span class="light yellow"><i class="dot"></i><span id="alertCount"></span></span></div>
+        <div class="panelBody sideList" id="alerts"></div>
       </section>
     </section>
 
@@ -949,7 +958,8 @@
         document.querySelector("#paramTrendSelect option[value='leafTemp']").textContent = txt("leafTempLabel");
         document.getElementById("paramTrendSelect").value = selectedParamTrend;
         document.getElementById("indexTrendSelect").value = selectedIndexTrend;
-        document.getElementById("alertTitle").textContent = txt("alertTitle");
+        var alertTitleEl = document.getElementById("alertTitle");
+        if (alertTitleEl) alertTitleEl.textContent = txt("alertTitle");
         document.getElementById("mobileParamsTitle").textContent = txt("mobileParamsTitle");
         document.getElementById("rulesTitle").textContent = txt("rulesTitle");
         document.getElementById("rulesPill").textContent = txt("rulesPill");
@@ -993,15 +1003,18 @@
         }).join("") + '</div><div class="growthFusionNote">' + txt("growthFusionNote").replace("{day}", crop.dap) + '</div>';
         var secondAlert = crop.alertType === "kale" ? txt("alertKale") : txt("alertTipburn");
         var secondAlertTitle = crop.alertType === "kale" ? txt("kaleAlertTitle") : txt("lettuceAlertTitle");
-        document.getElementById("alertCount").textContent = txt("alertCountText");
         var alertsHtml =
           '<div class="item"><div class="itemHead"><strong>' + txt("rule1") + '</strong><span class="tier today">' + txt("tierToday") + '</span></div><span class="muted">' + txt(crop.leafTemp.dliAlertKey) + '</span></div>' +
           '<div class="item"><div class="itemHead"><strong>' + secondAlertTitle + '</strong><span class="tier observe">' + txt("tierObserve") + '</span></div><span class="muted">' + secondAlert + '</span></div>' +
           '<div class="deviceRow on"><strong>' + txt("fan") + '</strong><span class="pill">ON</span></div>' +
           '<div class="deviceRow"><strong>' + txt("fog") + '</strong><span class="pill">OFF</span></div>' +
           '<div class="deviceRow on"><strong>' + txt("led") + '</strong><span class="pill">PWM ' + (cropKey === "kale" ? "42%" : "58%") + '</span></div>';
-        document.getElementById("alerts").innerHTML = alertsHtml;
-        document.getElementById("mobileLiveAlerts").innerHTML = '<div class="mobileAlertTitle"><strong>' + txt("alertTitle") + '</strong><span class="light yellow"><i class="dot"></i>' + txt("alertCountText") + '</span></div>' + alertsHtml;
+        var alertCountEl = document.getElementById("alertCount");
+        if (alertCountEl) alertCountEl.textContent = txt("alertCountText");
+        var alertsEl = document.getElementById("alerts");
+        if (alertsEl) alertsEl.innerHTML = alertsHtml;
+        var mobileLiveAlertsEl = document.getElementById("mobileLiveAlerts");
+        if (mobileLiveAlertsEl) mobileLiveAlertsEl.innerHTML = '<div class="mobileAlertTitle"><strong>' + txt("alertTitle") + '</strong><span class="light yellow"><i class="dot"></i>' + txt("alertCountText") + '</span></div>' + alertsHtml;
         document.getElementById("rules").innerHTML =
           '<div class="ruleCard warn"><span class="ruleBadge">01</span><div><strong>' + txt("rule1") + '</strong><span class="muted">' + txt(crop.leafTemp.ruleTextKey) + '</span></div></div>' +
           '<div class="ruleCard"><span class="ruleBadge">02</span><div><strong>' + txt("rule2") + '</strong><span class="muted">' + txt("rule2Text") + '</span></div></div>' +
@@ -1196,7 +1209,7 @@
           window.parent.postMessage({ type: "AIOT_NAVIGATE", page: "settings" }, "*");
           try { window.parent.location.hash = "page=settings"; } catch (error) {}
         } else {
-          window.location.href = "../../mobile/";
+          window.location.href = "../settings-page.html";
         }
       });
       document.querySelectorAll("[data-mobile-tab]").forEach(function(btn) {

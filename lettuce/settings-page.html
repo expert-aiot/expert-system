@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JNC Bio-AIoT | Hydroponic Vegetable Settings</title>
+  <link rel="stylesheet" href="../data/platform_app.css">
+</head>
+<body>
+  <main id="platformRoot" data-page="settings"></main>
+  <script src="../data/client_config_api.js"></script>
+  <script src="../data/client_template_settings.js"></script>
+  <script src="../data/runtime_result_overlay_NO_DATA.js"></script>
+  <script src="../data/platform_app.js?v=20260805-lettuce-live-sensors"></script>
+  <script>
+    var HYDROPONIC_DEMO_CONFIG = {
+      industry: "agriculture",
+      species: "hydroponicVegetables",
+      breed: "Lactuca sativa",
+      cultureMode: "啟用",
+      targetSpec: "萵苣",
+      stockingDate: "2026-05-14",
+      plannedHarvestDate: "2026-08-12",
+      pondId: "bed-01",
+      stockingCount: "2",
+      pondAreaValue: "2400",
+      pondAreaUnit: "m2",
+      pondAreaM2: "2400",
+      demoMode: false
+    };
+
+    var HYDROPONIC_CROP_RUNTIME = {
+      "萵苣": {
+        breed: "Lactuca sativa",
+        wqi: 86,
+        giScore: 84,
+        rootCause: "DLI 預估不足",
+        visionValue: "影像 AI 已啟動",
+        parameters: {
+          EC: ["1.45", "mS/cm", 92],
+          pH: ["5.92", "", 91],
+          DO: ["6.8", "mg/L", 86],
+          waterTempC: ["27.1", "C", 88],
+          airTempC: ["31.2", "C", 72],
+          humidityPct: ["88", "%", 70],
+          DLI: ["9.8", "mol/m2/d", 68],
+          CO2: ["330", "ppm", 90],
+          vision: ["影像 AI 已啟動", "", 84]
+        }
+      },
+      "羽衣甘藍": {
+        breed: "Brassica oleracea",
+        wqi: 88,
+        giScore: 76,
+        rootCause: "葉形發展略慢",
+        visionValue: "影像 AI 已啟動",
+        parameters: {
+          EC: ["1.72", "mS/cm", 88],
+          pH: ["5.86", "", 93],
+          DO: ["6.5", "mg/L", 84],
+          waterTempC: ["21.1", "C", 86],
+          airTempC: ["27.1", "C", 89],
+          humidityPct: ["78", "%", 82],
+          DLI: ["13.4", "mol/m2/d", 86],
+          CO2: ["610", "ppm", 88],
+          vision: ["影像 AI 已啟動", "", 76]
+        }
+      }
+    };
+
+    function makeRuntimeParameter(id, tuple, timestamp) {
+      return {
+        id: id,
+        value: tuple[0],
+        unit: tuple[1],
+        score: tuple[2],
+        light: tuple[2] >= 80 ? "green" : tuple[2] >= 60 ? "yellow" : "red",
+        sensorInstalled: true,
+        isInstalled: true,
+        timestamp: timestamp,
+        receivedAt: timestamp
+      };
+    }
+
+    function applyHydroponicRuntime(cropName) {
+      var crop = HYDROPONIC_CROP_RUNTIME[cropName] || HYDROPONIC_CROP_RUNTIME["萵苣"];
+      var timestamp = new Date().toISOString();
+      var parameters = {};
+      Object.keys(crop.parameters).forEach(function (id) {
+        parameters[id] = makeRuntimeParameter(id, crop.parameters[id], timestamp);
+      });
+      window.AIOT_RUNTIME_RESULT = {
+        mode: "DEMO",
+        source: "lettuce-settings-static-runtime",
+        calculatedAt: timestamp,
+        wqi: crop.wqi,
+        wqiScore: crop.wqi,
+        wqiLight: "green",
+        wqiLabel: "已計算",
+        giScore: crop.giScore,
+        giLight: crop.giScore >= 80 ? "green" : "yellow",
+        giLabel: "已計算",
+        rootCause: crop.rootCause,
+        parameters: parameters,
+        underwaterVision: {
+          bodyLengthCm: cropName === "萵苣" ? 24.6 : 28.4,
+          bodyWeightG: cropName === "萵苣" ? 168 : 212,
+          confidencePct: cropName === "萵苣" ? 91 : 88,
+          summary: crop.visionValue,
+          sensorInstalled: true,
+          isInstalled: true,
+          timestamp: timestamp
+        },
+        vision: {
+          value: crop.visionValue,
+          confidencePct: cropName === "萵苣" ? 91 : 88,
+          sensorInstalled: true,
+          isInstalled: true,
+          timestamp: timestamp
+        },
+        batchTiming: {
+          stockingDate: "2026-05-14",
+          plannedHarvestDate: "2026-08-12",
+          today: "2026-08-05",
+          daysAfterStocking: 84,
+          plannedCultureDays: 91,
+          daysToHarvest: 7,
+          cultureProgressPct: 92,
+          cultureDayLabelZh: "第 84 天"
+        },
+        weatherContext: {
+          microWeather: {
+            airTempC: Number(crop.parameters.airTempC[0]),
+            humidityPct: Number(crop.parameters.humidityPct[0])
+          }
+        }
+      };
+    }
+
+    function currentCropName() {
+      var settings = window.AIOT_CLIENT_SETTINGS;
+      var current = settings && settings.loadConfig ? settings.loadConfig() : {};
+      return current.targetSpec || HYDROPONIC_DEMO_CONFIG.targetSpec;
+    }
+
+    function applyHydroponicCatalogOverrides(settings) {
+      var catalog = settings && settings.TEMPLATE_CATALOG;
+      var agriculture = catalog && catalog.agriculture;
+      var hydroponicTemplate = agriculture
+        && agriculture.templates
+        && agriculture.templates.hydroponicVegetables;
+      if (!hydroponicTemplate) return;
+
+      Object.keys(catalog).forEach(function (industryId) {
+        if (industryId !== "agriculture") delete catalog[industryId];
+      });
+      Object.keys(agriculture.templates || {}).forEach(function (templateId) {
+        if (templateId !== "hydroponicVegetables") delete agriculture.templates[templateId];
+      });
+
+      agriculture.label = "場域設定已完成";
+      agriculture.labelEn = "Site profile ready";
+      hydroponicTemplate.label = "水耕蔬菜";
+      hydroponicTemplate.labelEn = "Hydroponic Vegetables";
+      hydroponicTemplate.commonName = "水耕蔬菜";
+      hydroponicTemplate.commonNameEn = "Hydroponic Vegetables";
+      hydroponicTemplate.defaultBreed = "Lactuca sativa";
+      hydroponicTemplate.scientificName = "Lactuca sativa / Brassica oleracea";
+      delete hydroponicTemplate.conceptUiUrl;
+      delete hydroponicTemplate.conceptUiUrlDesktop;
+      delete hydroponicTemplate.conceptUiUrlMobile;
+
+      hydroponicTemplate.siteFields = [
+        { id: "targetSpec", label: "作物", labelEn: "Crop", type: "select", options: ["萵苣", "羽衣甘藍"], optionsEn: ["Lettuce", "Kale"] },
+        { id: "breed", label: "品種", labelEn: "Variety", type: "text", placeholder: "Lactuca sativa" },
+        { id: "stockingDate", label: "定植日", labelEn: "Transplant date", type: "date" },
+        { id: "plannedHarvestDate", label: "預計收成日", labelEn: "Planned harvest date", type: "date" },
+        { id: "pondId", label: "場域 / 床層", labelEn: "Site / bed", type: "text", placeholder: "bed-01" },
+        { id: "stockingCount", label: "栽培區數", labelEn: "Cultivation zone count", type: "number" },
+        { id: "pondAreaM2", label: "床層面積 m2", labelEn: "Bed area m2", type: "number" },
+        { id: "cultureMode", label: "葉溫量測任務", labelEn: "Leaf temp task", type: "select", options: ["啟用", "停用"], optionsEn: ["Enabled", "Disabled"] }
+      ];
+
+      hydroponicTemplate.sensorRequirements = [
+        { id: "hydro-ec", parameterId: "EC", requirement: "required", sensorInstalled: true, label: "營養液導電度感測器", labelEn: "EC Sensor", unit: "mS/cm", productImageUrl: "../assets/sensors/水質感測器.png", productName: "JNC 營養液感測器", productNameEn: "JNC EC Sensor", description: "根域營養液穩定度判斷的核心資料。", descriptionEn: "Core signal for nutrient strength." },
+        { id: "hydro-ph", parameterId: "pH", requirement: "required", sensorInstalled: true, label: "酸鹼值感測器", labelEn: "pH Sensor", unit: "", productImageUrl: "../assets/sensors/水質感測器.png", productName: "JNC 酸鹼值感測器", productNameEn: "JNC pH Sensor", description: "判斷吸收風險與營養液調整的必要資料。", descriptionEn: "Required for uptake-risk decisions." },
+        { id: "hydro-do", parameterId: "DO", requirement: "required", sensorInstalled: true, label: "溶氧感測器", labelEn: "DO Sensor", unit: "mg/L", productImageUrl: "../assets/sensors/水質感測器.png", productName: "JNC 溶氧感測器", productNameEn: "JNC DO Sensor", description: "根域缺氧與控制互鎖判斷的核心資料。", descriptionEn: "Root-zone oxygen signal." },
+        { id: "hydro-water-temp", parameterId: "waterTempC", requirement: "required", sensorInstalled: true, label: "營養液溫度感測器", labelEn: "Nutrient Temperature Sensor", unit: "C", productImageUrl: "../assets/sensors/水質感測器.png", productName: "JNC 營養液溫度感測器", productNameEn: "JNC Nutrient Temperature Sensor", description: "追蹤根域溫度、溶氧與病害風險。", descriptionEn: "Tracks root temperature and disease risk." },
+        { id: "hydro-air-temp", parameterId: "airTempC", requirement: "required", sensorInstalled: true, label: "空氣溫度感測器", labelEn: "Air Temperature Sensor", unit: "C", productImageUrl: "../assets/sensors/戶外氣體感測器OA4.png", productName: "JNC 空氣溫度感測器", productNameEn: "JNC Air Temperature Sensor", description: "支援蒸散壓力、抽苔與葉焦風險判斷。", descriptionEn: "Supports heat and tipburn decisions." },
+        { id: "hydro-humidity", parameterId: "humidityPct", requirement: "required", sensorInstalled: true, label: "相對濕度感測器", labelEn: "Relative Humidity Sensor", unit: "%", productImageUrl: "../assets/sensors/戶外氣體感測器OA4.png", productName: "JNC 相對濕度感測器", productNameEn: "JNC RH Sensor", description: "與空溫一起推算水氣壓差。", descriptionEn: "Paired with air temperature for VPD." },
+        { id: "hydro-dli", parameterId: "DLI", requirement: "required", sensorInstalled: true, label: "光照感測器", labelEn: "DLI Sensor", unit: "mol/m2/d", productImageUrl: "../assets/sensors/光照感測器.png", productName: "JNC 光照感測器", productNameEn: "JNC Light Sensor", description: "追蹤每日累積光量與補光需求。", descriptionEn: "Tracks daily light integral." },
+        { id: "hydro-co2", parameterId: "CO2", requirement: "optional", sensorInstalled: true, label: "二氧化碳感測器", labelEn: "CO2 Sensor", unit: "ppm", productImageUrl: "../assets/sensors/戶外氣體感測器OA4.png", productName: "JNC 二氧化碳感測器", productNameEn: "JNC CO2 Sensor", description: "選配光合效率診斷資料。", descriptionEn: "Optional photosynthesis signal." },
+        { id: "hydro-camera", parameterId: "vision", requirement: "optional", sensorInstalled: true, label: "影像攝影機", labelEn: "Vision Camera", unit: "", productImageUrl: "../assets/sensors/雲端環境影像攝影機.png", productName: "JNC 影像模組", productNameEn: "JNC Vision Module", description: "影像 AI 已啟動，支援葉色、葉焦與生長影像診斷。", descriptionEn: "Vision AI is active for leaf color, tipburn, and growth diagnostics." }
+      ];
+
+      hydroponicTemplate.standardProfiles = hydroponicTemplate.standardProfiles || {};
+      hydroponicTemplate.standardProfiles.leafTempC = [
+        { label: "第一次量測", start: "11:00", end: "", idealMin: "", idealMax: "", warningMin: "", warningMax: "", dangerMin: "", dangerMax: "" },
+        { label: "第二次量測", start: "14:00", end: "", idealMin: "", idealMax: "", warningMin: "", warningMax: "", dangerMin: "", dangerMax: "" }
+      ];
+    }
+
+    function bindHydroponicCropBreedSync() {
+      var crop = document.getElementById("site_targetSpec");
+      var breed = document.getElementById("site_breed");
+      if (!crop || !breed) return;
+      var breedByCrop = {
+        "萵苣": "Lactuca sativa",
+        "羽衣甘藍": "Brassica oleracea"
+      };
+      function syncBreed(remount) {
+        var nextBreed = breedByCrop[crop.value] || "";
+        if (nextBreed) breed.value = nextBreed;
+        applyHydroponicRuntime(crop.value);
+        if (remount && window.AIOT_CLIENT_SETTINGS && window.AIOT_CLIENT_SETTINGS.saveConfig) {
+          window.AIOT_CLIENT_SETTINGS.saveConfig({ targetSpec: crop.value, breed: nextBreed });
+          PlatformApp.mount(document.getElementById("platformRoot"), "settings");
+          bindHydroponicCropBreedSync();
+        }
+      }
+      syncBreed(false);
+      crop.addEventListener("change", function () { syncBreed(true); });
+    }
+
+    (function seedHydroponicSettings() {
+      var settings = window.AIOT_CLIENT_SETTINGS;
+      if (!settings) return;
+      applyHydroponicCatalogOverrides(settings);
+      var current = settings.loadConfig ? settings.loadConfig() : {};
+      if (current.industry !== "agriculture" || current.species !== "hydroponicVegetables") {
+        settings.saveConfig(HYDROPONIC_DEMO_CONFIG);
+      }
+      applyHydroponicRuntime((settings.loadConfig ? settings.loadConfig() : HYDROPONIC_DEMO_CONFIG).targetSpec || "萵苣");
+    })();
+
+    (window.AIOT_CLIENT_SETTINGS && window.AIOT_CLIENT_SETTINGS.syncConfigFromServer
+      ? window.AIOT_CLIENT_SETTINGS.syncConfigFromServer()
+      : Promise.resolve()).then(function () {
+        if (window.AIOT_CLIENT_SETTINGS && window.AIOT_CLIENT_SETTINGS.saveConfig) {
+          applyHydroponicCatalogOverrides(window.AIOT_CLIENT_SETTINGS);
+          var current = window.AIOT_CLIENT_SETTINGS.loadConfig ? window.AIOT_CLIENT_SETTINGS.loadConfig() : {};
+          if (current.industry !== "agriculture" || current.species !== "hydroponicVegetables") {
+            window.AIOT_CLIENT_SETTINGS.saveConfig(HYDROPONIC_DEMO_CONFIG);
+            current = HYDROPONIC_DEMO_CONFIG;
+          }
+          applyHydroponicRuntime(current.targetSpec || "萵苣");
+        }
+        PlatformApp.mount(document.getElementById("platformRoot"), "settings");
+        bindHydroponicCropBreedSync();
+        document.addEventListener("click", function (event) {
+          var saveButton = event.target && event.target.closest ? event.target.closest("#saveSiteConfig") : null;
+          if (!saveButton) return;
+          setTimeout(function () {
+            window.location.href = "index.html";
+          }, 120);
+        });
+      });
+  </script>
+</body>
+</html>
