@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>JNC Bio-AIoT | Hydroponic Vegetable Settings</title>
-  <link rel="stylesheet" href="../data/platform_app.css">
+  <link rel="stylesheet" href="../data/platform_app.css?v=20260805-lettuce-demo-2">
 </head>
 <body>
   <main id="platformRoot" data-page="settings"></main>
-  <script src="../data/client_config_api.js"></script>
-  <script src="../data/client_template_settings.js"></script>
-  <script src="../data/runtime_result_overlay_NO_DATA.js"></script>
-  <script src="../data/platform_app.js?v=20260805-lettuce-live-sensors"></script>
+  <script src="../data/client_config_api.js?v=20260805-lettuce-demo-2"></script>
+  <script src="../data/client_template_settings.js?v=20260805-lettuce-demo-2"></script>
+  <script src="../data/runtime_result_overlay_NO_DATA.js?v=20260805-lettuce-demo-2"></script>
+  <script src="../data/platform_app.js?v=20260805-lettuce-demo-2"></script>
   <script>
     var HYDROPONIC_DEMO_CONFIG = {
       industry: "agriculture",
@@ -143,6 +143,50 @@
       return current.targetSpec || HYDROPONIC_DEMO_CONFIG.targetSpec;
     }
 
+    function hydroponicBreedForCrop(cropName) {
+      return cropName === "羽衣甘藍" ? "Brassica oleracea" : "Lactuca sativa";
+    }
+
+    function lockedHydroponicConfig(overrides) {
+      var cropName = overrides && overrides.targetSpec ? overrides.targetSpec : currentCropName();
+      if (!HYDROPONIC_CROP_RUNTIME[cropName]) cropName = "萵苣";
+      return Object.assign({}, HYDROPONIC_DEMO_CONFIG, overrides || {}, {
+        industry: "agriculture",
+        species: "hydroponicVegetables",
+        targetSpec: cropName,
+        breed: hydroponicBreedForCrop(cropName),
+        demoMode: false
+      });
+    }
+
+    function readHydroponicFormConfig() {
+      function fieldValue(id, fallback) {
+        var input = document.getElementById(id);
+        return input ? input.value : fallback;
+      }
+      var cropName = fieldValue("site_targetSpec", currentCropName());
+      return lockedHydroponicConfig({
+        targetSpec: cropName,
+        breed: fieldValue("site_breed", hydroponicBreedForCrop(cropName)),
+        stockingDate: fieldValue("site_stockingDate", HYDROPONIC_DEMO_CONFIG.stockingDate),
+        plannedHarvestDate: fieldValue("site_plannedHarvestDate", HYDROPONIC_DEMO_CONFIG.plannedHarvestDate),
+        pondId: fieldValue("site_pondId", HYDROPONIC_DEMO_CONFIG.pondId),
+        stockingCount: fieldValue("site_stockingCount", HYDROPONIC_DEMO_CONFIG.stockingCount),
+        pondAreaValue: fieldValue("site_pondAreaValue", HYDROPONIC_DEMO_CONFIG.pondAreaValue),
+        pondAreaUnit: fieldValue("site_pondAreaUnit", HYDROPONIC_DEMO_CONFIG.pondAreaUnit),
+        pondAreaM2: fieldValue("site_pondAreaM2", HYDROPONIC_DEMO_CONFIG.pondAreaM2),
+        cultureMode: fieldValue("site_cultureMode", HYDROPONIC_DEMO_CONFIG.cultureMode)
+      });
+    }
+
+    function saveAndExitHydroponicSettings() {
+      var settings = window.AIOT_CLIENT_SETTINGS;
+      var next = readHydroponicFormConfig();
+      if (settings && settings.saveConfig) settings.saveConfig(next);
+      applyHydroponicRuntime(next.targetSpec);
+      window.location.replace("index.html");
+    }
+
     function applyHydroponicCatalogOverrides(settings) {
       var catalog = settings && settings.TEMPLATE_CATALOG;
       var agriculture = catalog && catalog.agriculture;
@@ -227,10 +271,9 @@
       if (!settings) return;
       applyHydroponicCatalogOverrides(settings);
       var current = settings.loadConfig ? settings.loadConfig() : {};
-      if (current.industry !== "agriculture" || current.species !== "hydroponicVegetables") {
-        settings.saveConfig(HYDROPONIC_DEMO_CONFIG);
-      }
-      applyHydroponicRuntime((settings.loadConfig ? settings.loadConfig() : HYDROPONIC_DEMO_CONFIG).targetSpec || "萵苣");
+      var locked = lockedHydroponicConfig(current);
+      settings.saveConfig(locked);
+      applyHydroponicRuntime(locked.targetSpec);
     })();
 
     (window.AIOT_CLIENT_SETTINGS && window.AIOT_CLIENT_SETTINGS.syncConfigFromServer
@@ -239,21 +282,20 @@
         if (window.AIOT_CLIENT_SETTINGS && window.AIOT_CLIENT_SETTINGS.saveConfig) {
           applyHydroponicCatalogOverrides(window.AIOT_CLIENT_SETTINGS);
           var current = window.AIOT_CLIENT_SETTINGS.loadConfig ? window.AIOT_CLIENT_SETTINGS.loadConfig() : {};
-          if (current.industry !== "agriculture" || current.species !== "hydroponicVegetables") {
-            window.AIOT_CLIENT_SETTINGS.saveConfig(HYDROPONIC_DEMO_CONFIG);
-            current = HYDROPONIC_DEMO_CONFIG;
-          }
-          applyHydroponicRuntime(current.targetSpec || "萵苣");
+          var locked = lockedHydroponicConfig(current);
+          window.AIOT_CLIENT_SETTINGS.saveConfig(locked);
+          applyHydroponicRuntime(locked.targetSpec);
         }
         PlatformApp.mount(document.getElementById("platformRoot"), "settings");
         bindHydroponicCropBreedSync();
         document.addEventListener("click", function (event) {
           var saveButton = event.target && event.target.closest ? event.target.closest("#saveSiteConfig") : null;
           if (!saveButton) return;
-          setTimeout(function () {
-            window.location.href = "index.html";
-          }, 120);
-        });
+          event.preventDefault();
+          event.stopPropagation();
+          if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+          saveAndExitHydroponicSettings();
+        }, true);
       });
   </script>
 </body>
