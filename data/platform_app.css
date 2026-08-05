@@ -1401,6 +1401,183 @@ th { color: var(--muted); font-weight: 500; }
 .mobilePlatform .notice,
 .mobilePlatform .emptyState { padding: 12px; }
 
+@media (max-width: 760px) {
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  .platformShell,
+  .mobileApp,
+  .mobileMain,
+  .panel,
+  .panelBody,
+  .settingsPageCard,
+  .nestedClean,
+  .standardSettings,
+  .sensorRequirementPanel,
+  .mobileSettingsSection,
+  .mobileSettingsSectionBody {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+  .platformShell {
+    width: 100%;
+    padding: 10px 8px 84px;
+  }
+  .platformTop {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .brand {
+    font-size: 18px;
+  }
+  .pageTitle {
+    width: 100%;
+    min-width: 0;
+    padding: 8px 10px;
+    font-size: 16px;
+    border-radius: 8px;
+  }
+  .topMeta {
+    text-align: left;
+    font-size: 12px;
+  }
+  .panelHeader,
+  .sectionTitle,
+  .standardTitleRow {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+  .panelHeader {
+    flex-wrap: wrap;
+    padding: 10px 12px;
+  }
+  .panelBody {
+    padding: 10px;
+  }
+  .panel h2 {
+    font-size: 18px;
+    line-height: 1.25;
+  }
+  .grid2,
+  .grid3,
+  .setupWorkspace,
+  .sensorRequirementGrid,
+  .customParamRow,
+  .standardRow,
+  .standardRangeRow,
+  .leafTempStandardRow {
+    grid-template-columns: 1fr;
+  }
+  .field input,
+  .field select,
+  .field textarea,
+  .standardRow input,
+  .standardRow select,
+  .customParamRow input,
+  .customParamRow select {
+    width: 100%;
+    min-width: 0;
+    font-size: 14px;
+  }
+  .sensorRequirementCard,
+  .mobilePlatform .sensorRequirementCard,
+  .mobilePlatform .sensorRequirementItem .sensorRequirementCard {
+    grid-template-columns: 78px minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px;
+  }
+  .sensorPhoto {
+    min-height: 78px;
+  }
+  .sensorInfo {
+    min-width: 0;
+  }
+  .sensorInfo h4,
+  .sensorInfo p,
+  .sensorRuntime strong,
+  .sensorRuntime small {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .sensorRuntime {
+    grid-column: 1 / -1;
+    justify-items: start;
+    text-align: left;
+    width: 100%;
+    border-top: 1px solid rgba(85, 220, 255, .18);
+    padding-top: 8px;
+  }
+  .sensorRuntime strong {
+    max-width: 100%;
+    font-size: 18px;
+    line-height: 1.28;
+  }
+  .statusPill {
+    max-width: 100%;
+    white-space: normal;
+  }
+  .standardParam summary {
+    display: grid;
+    grid-template-columns: 1fr;
+    padding: 10px;
+  }
+  .standardParam summary > span {
+    width: fit-content;
+    max-width: 100%;
+    white-space: normal;
+  }
+  .standardSummaryText {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .standardRows {
+    padding: 10px;
+  }
+  .rangePair,
+  .mobilePlatform .rangePair {
+    grid-column: auto;
+    grid-template-columns: 1fr 1fr;
+  }
+  .leafTempThreshold {
+    min-width: 0;
+  }
+  .areaInputGroup {
+    grid-template-columns: 1fr;
+  }
+  .settingsActionBar,
+  .mobilePlatform .settingsActionBar {
+    position: sticky;
+    bottom: 8px;
+    grid-template-columns: 1fr 1fr;
+    z-index: 5;
+  }
+}
+
+@media (max-width: 420px) {
+  .sensorRequirementCard,
+  .mobilePlatform .sensorRequirementCard,
+  .mobilePlatform .sensorRequirementItem .sensorRequirementCard {
+    grid-template-columns: 1fr;
+  }
+  .sensorPhoto {
+    width: min(118px, 100%);
+    justify-self: start;
+  }
+  .rangePair,
+  .mobilePlatform .rangePair {
+    grid-template-columns: 1fr;
+  }
+  .settingsActionBar,
+  .mobilePlatform .settingsActionBar {
+    grid-template-columns: 1fr;
+  }
+}
+
 .ratioBlock.alertGlow,
 .parameterAsidePanel.alertGlow {
   border-color: var(--yellow);
