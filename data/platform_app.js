@@ -1,10 +1,14 @@
-(function (root) {
+﻿(function (root) {
   "use strict";
 
   var Settings = root.AIOT_CLIENT_SETTINGS;
   var lastRoot = null;
   var lastPage = "settings";
   var suppressNextConfigRemount = false;
+  var runtimeFetchInFlight = false;
+  var runtimeLastFetchMs = 0;
+  var runtimeAutoRefreshTimer = null;
+  var RUNTIME_REFRESH_MS = 30000;
   var DEMO_CONFIG = {
     industry: "fisheries",
     species: "whiteShrimp",
@@ -72,6 +76,7 @@
       decisionHintEn: "Weak wind and high UV are included in DO risk assessment"
     },
     underwaterVision: {
+      iframeUrl: "https://www.jnc-tec.com/8083/Video.html?cam=23038f49ebc548b44dcbe361650f47f5&showname=0",
       videoUrl: "assets/videos/jnc-shrimp-ai-vision.mp4",
       imageUrl: "assets/realistic_white_shrimp.png",
       bodyLengthCm: 10.3,
@@ -80,11 +85,11 @@
       confidencePct: 92
     },
     parameters: {
-      DO: { name: "DO 溶氧", unit: "mg/L", score: 48, value: "4.10 mg/L", light: "red", label: "異常", ratio: { blue: 5, green: 55, yellow: 30, orange: 5, red: 5 }, coverage: 92, isFresh: true, ageHours: 1, freshnessStatus: "fresh" },
-      pH: { name: "pH 酸鹼值", unit: "", score: 92, value: "7.82", light: "green", label: "綠燈", ratio: { blue: 35, green: 55, yellow: 10, orange: 0, red: 0 }, coverage: 96, isFresh: true, ageHours: 1, freshnessStatus: "fresh" },
-      orpMv: { name: "ORP 氧化還原電位", unit: "mV", score: 84, value: "312 mV", light: "green", label: "綠燈", ratio: { blue: 12, green: 66, yellow: 22, orange: 0, red: 0 }, coverage: 94, isFresh: true, ageHours: 1, freshnessStatus: "fresh" },
-      salinityPpt: { name: "SC 鹽度", unit: "ppt", score: 88, value: "18.4 ppt", light: "green", label: "綠燈", ratio: { blue: 18, green: 68, yellow: 14, orange: 0, red: 0 }, coverage: 95, isFresh: true, ageHours: 1, freshnessStatus: "fresh" },
-      waterTempC: { name: "水溫", unit: "C", score: 76, value: "30.8 C", light: "yellow", label: "黃燈", ratio: { blue: 10, green: 60, yellow: 30, orange: 0, red: 0 }, coverage: 93, isFresh: true, ageHours: 1, freshnessStatus: "fresh" }
+      DO: { name: "DO \u6eb6\u6c27", unit: "mg/L", score: 48, value: "4.10 mg/L", light: "red", label: "\u5371\u96aa", ratio: { green: 60, yellow: 35, red: 5 }, coverage: 92, isFresh: true, ageHours: 1, freshnessStatus: "fresh" },
+      pH: { name: "pH \u9178\u9e7c\u503c", unit: "", score: 92, value: "7.82", light: "green", label: "\u6700\u4f73", ratio: { green: 90, yellow: 10, red: 0 }, coverage: 96, isFresh: true, ageHours: 1, freshnessStatus: "fresh" },
+      orpMv: { name: "ORP \u6c27\u5316\u9084\u539f\u96fb\u4f4d", unit: "mV", score: 84, value: "312 mV", light: "green", label: "\u6700\u4f73", ratio: { green: 78, yellow: 22, red: 0 }, coverage: 94, isFresh: true, ageHours: 1, freshnessStatus: "fresh" },
+      salinityPpt: { name: "SC \u9e7d\u5ea6", unit: "ppt", score: 88, value: "18.4 ppt", light: "green", label: "\u6700\u4f73", ratio: { green: 86, yellow: 14, red: 0 }, coverage: 95, isFresh: true, ageHours: 1, freshnessStatus: "fresh" },
+      waterTempC: { name: "\u6c34\u6eab", unit: "C", score: 76, value: "30.8 C", light: "yellow", label: "\u6ce8\u610f", ratio: { green: 70, yellow: 30, red: 0 }, coverage: 93, isFresh: true, ageHours: 1, freshnessStatus: "fresh" }
     },
     trendSeries: {
       DO: { min: 0, max: 100, valueUnit: "mg/L", standard: [72, 76, 80, 88], actual: [68, 58, 42, 28], actualValues: [5.2, 4.8, 4.4, 4.1], forecast: [52, 76, 90], forecastValues: [4.5, 5.0, 5.6] },
@@ -96,8 +101,8 @@
       GI: { min: 0, max: 100, valueUnit: "%", standard: [35, 55, 75, 100], actual: [38, 54, 70, 84], forecast: [84, 88, 92, 96] }
     },
     decisions: [
-      ["today", "今日決策", "晚間減料 30%", "DO 24h 綠燈占比下降，今晚預測耗氧壓力升高。", "提前開水車，防止 DO 下降；晚間投餵量下修 30%。", "預估 2 小時回到安全區。", "影響：降低低氧與殘餌風險　信心：中", "yellow"],
-      ["week", "本週決策", "本週觀察底質", "ORP 7d 黃燈時間比例略升。", "安排進水/排汙檢查，防止底質惡化。", "降低 H2S 與 NO2/NH3 風險。", "影響：增加少量管理成本　信心：中", "orange"],
+      ["today", "今日決策", "晚間減料 30%", "DO 24h 最佳占比下降，今晚預測耗氧壓力升高。", "提前開水車，防止 DO 下降；晚間投餵量下修 30%。", "預估 2 小時回到安全區。", "影響：降低低氧與殘餌風險　信心：中", "yellow"],
+      ["week", "本週決策", "本週觀察底質", "ORP 7d 注意時間比例略升。", "安排進水/排汙檢查，防止底質惡化。", "降低 H2S 與 NO2/NH3 風險。", "影響：增加少量管理成本　信心：中", "yellow"],
       ["harvest", "收成決策", "維持原收成日", "GI 符合 20/30 目標曲線。", "維持原收成日，不提前改策略。", "預估收穫量 7,182 kg。", "信心：中", "green"],
       ["cost", "成本決策", "夜間水車成本上升", "低氧預測提高水車運轉時數。", "保留夜間水車，不做節能停機。", "維持 DO 安全區。", "影響：電費增加，降低死亡損失　信心：中", "yellow"],
       ["risk", "風險決策", "豪雨前預措", "24h 降雨預測升高。", "提前進水/排汙調整水位，減料 30-50%。", "降低 pH / 鹽度急變風險。", "影響：短期投餵降低　信心：中", "red"],
@@ -118,7 +123,85 @@
     return cfg.demoMode === true || cfg.demoMode === "on";
   }
   function runtime() { return isDemoMode() ? DEMO_RESULT : (root.AIOT_RUNTIME_RESULT || {}); }
-  function config() { return isDemoMode() ? Object.assign({}, Settings.loadConfig(), DEMO_CONFIG) : Settings.loadConfig(); }
+  function standardOverridesForBackend(cfg) {
+    var standards = cfg && cfg.parameterStandards && typeof cfg.parameterStandards === "object" ? cfg.parameterStandards : {};
+    var out = {};
+    Object.keys(standards).forEach(function (id) {
+      var rows = Array.isArray(standards[id]) ? standards[id].filter(hasBackendStandardValue) : [];
+      if (rows.length) out[id] = rows;
+    });
+    return Object.keys(out).length ? out : null;
+  }
+  function hasBackendStandardValue(row) {
+    return Boolean(row && (row.idealMin !== "" || row.idealMax !== "" || row.warningMin !== "" || row.warningMax !== "" || row.dangerMin !== "" || row.dangerMax !== ""));
+  }
+  function refreshRuntimeFromBackend(force) {
+    if (isDemoMode() || runtimeFetchInFlight || !root.fetch) return;
+    var nowMs = Date.now();
+    if (!force && runtimeLastFetchMs && nowMs - runtimeLastFetchMs < RUNTIME_REFRESH_MS) return;
+    runtimeFetchInFlight = true;
+    var cfg = Settings.enforceTemplateScope ? Settings.enforceTemplateScope(Settings.loadConfig()) : Settings.loadConfig();
+    var params = new URLSearchParams();
+    if (cfg.templateId) params.set("templateId", cfg.templateId);
+    if (cfg.tenantId) params.set("tenantId", cfg.tenantId);
+    if (cfg.accountId) params.set("accountId", cfg.accountId);
+    if (cfg.siteId) params.set("siteId", cfg.siteId);
+    if (cfg.pondId) params.set("pondId", cfg.pondId);
+    if (cfg.batchId) params.set("batchId", cfg.batchId);
+    params.set("historyWindowHours", "12");
+    params.set("maxRecords", "12000");
+    [
+      "industry",
+      "species",
+      "breed",
+      "cultureMode",
+      "targetSpec",
+      "targetSpecUnit",
+      "stockingDate",
+      "plannedHarvestDate",
+      "targetWeightG",
+      "targetWeightGMin",
+      "targetWeightGMax",
+      "targetWeightGMid",
+      "stockingCount",
+      "stockingDensityPerM2",
+      "pondAreaM2",
+      "waterVolumeM3"
+    ].forEach(function (key) {
+      if (cfg[key] != null && cfg[key] !== "") params.set(key, cfg[key]);
+    });
+    var standardOverrides = standardOverridesForBackend(cfg);
+    if (standardOverrides) params.set("standards", JSON.stringify(standardOverrides));
+    var runtimeUrl = "/api/aiot/v1/backend/dashboard" + (params.toString() ? "?" + params.toString() : "");
+    root.fetch(runtimeUrl, { cache: "no-store" })
+      .then(function (res) {
+        if (!res.ok) throw new Error("backend dashboard " + res.status);
+        return res.json();
+      })
+      .then(function (payload) {
+        if (!payload || !payload.runtimeResult) return;
+        root.AIOT_RUNTIME_RESULT = payload.runtimeResult;
+        runtimeLastFetchMs = Date.now();
+        root.dispatchEvent(new Event("AIOT_RUNTIME_UPDATED"));
+      })
+      .catch(function (error) {
+        root.AIOT_RUNTIME_ERROR = error && error.message || String(error || "runtime fetch failed");
+      })
+      .finally(function () {
+        runtimeFetchInFlight = false;
+      });
+  }
+  function startRuntimeAutoRefresh() {
+    if (runtimeAutoRefreshTimer || !root.setInterval) return;
+    runtimeAutoRefreshTimer = root.setInterval(function () {
+      if (!lastRoot || isDemoMode()) return;
+      refreshRuntimeFromBackend(true);
+    }, RUNTIME_REFRESH_MS);
+  }
+  function config() {
+    var cfg = isDemoMode() ? Object.assign({}, Settings.loadConfig(), DEMO_CONFIG) : Settings.loadConfig();
+    return Settings.enforceTemplateScope ? Settings.enforceTemplateScope(cfg) : cfg;
+  }
   function template(cfg) { return Settings.currentTemplate(cfg || config()); }
   function lang() { return config().language === "en" ? "en" : "zh"; }
   function isEn() { return lang() === "en"; }
@@ -257,7 +340,7 @@
     "使用客戶自訂": "Using customer custom standard",
     "選填，未填則套用系統標準": "Optional. Blank fields apply the system standard.",
     "參數標準線自訂": "Parameter Standard Line Custom",
-    "選填。未填寫時，平台會自動套用白蝦系統標準；有填寫時，優先使用客戶自訂標準。": "Optional. Blank fields automatically apply the white shrimp system standard. Filled fields take priority as customer custom standards.",
+    "選填。未填寫時套用系統建議；有填寫時，優先使用自訂標準。": "Optional. Blank fields use the system recommendation. Filled fields take priority as custom standards.",
     "清除自訂標準": "Clear Custom Standard",
     "理想低": "Ideal Low",
     "理想高": "Ideal High",
@@ -391,14 +474,20 @@
   function trendSeriesFor(id) {
     var data = runtime();
     var series = (data.trendSeries || {})[id];
+    if (id === "GI" && !hasValidGiScore(data)) return null;
     if (series) return applyConfiguredStandard(id, series);
     return id === "GI" && hasImport() ? derivedGiTrendSeries(data, config()) : null;
   }
+  function hasValidGiScore(data) {
+    var value = data && data.giScore;
+    if (value == null || value === "") return false;
+    return Number.isFinite(Number(value));
+  }
   function derivedGiTrendSeries(data, cfg) {
+    if (!hasValidGiScore(data)) return null;
     var batch = data.batchTiming || cultureMetrics(cfg);
     var progress = Number(batch.cultureProgressPct || 0);
-    var score = Number(data.giScore || progress || 0);
-    if (!score && !progress) return null;
+    var score = Number(data.giScore);
     var actualNow = Math.max(0, Math.min(100, score || progress));
     var early = Math.max(0, Math.round(actualNow * 0.55));
     var mid = Math.max(0, Math.round((early + actualNow) / 2));
@@ -415,10 +504,16 @@
   }
   function parameterStandardRows(id, cfg) {
     var state = cfg || config();
-    var saved = ((state.parameterStandards || {})[id] || []);
-    if (saved.length) return saved;
     var tpl = template(state);
-    return tpl && tpl.standardProfiles && tpl.standardProfiles[id] ? tpl.standardProfiles[id] : [];
+    var defaults = tpl && tpl.standardProfiles && tpl.standardProfiles[id] ? tpl.standardProfiles[id] : standardEditorRows();
+    if (state.templateId === "fisheries/whiteShrimp" && ["DO", "pH", "orpMv", "salinityPpt", "waterTempC"].indexOf(id) >= 0 && defaults.length < 2) {
+      defaults = standardEditorRows();
+    }
+    var saved = ((state.parameterStandards || {})[id] || []);
+    var source = defaults.length ? defaults : standardEditorRows();
+    return source.map(function (row, index) {
+      return Object.assign({}, row, saved[index] || {});
+    });
   }
   function customStandardRows(id, cfg) {
     var state = cfg || config();
@@ -430,7 +525,7 @@
   }
   function standardsEqual(a, b) {
     if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
-    var keys = ["label", "start", "end", "idealMin", "idealMax", "warningMin", "warningMax", "dangerMin", "dangerMax"];
+    var keys = ["start", "end", "idealMin", "idealMax", "warningMin", "warningMax", "dangerMin", "dangerMax"];
     return a.every(function (row, index) {
       var other = b[index] || {};
       return keys.every(function (key) { return String(row[key] == null ? "" : row[key]) === String(other[key] == null ? "" : other[key]); });
@@ -447,7 +542,7 @@
       value: "",
       light: null,
       label: "",
-      ratio: { blue: 0, green: 0, yellow: 0, orange: 0, red: 0 },
+      ratio: { green: 0, yellow: 0, red: 0 },
       coverage: 0,
       isFresh: false,
       freshnessStatus: "not_imported",
@@ -486,9 +581,7 @@
   function configuredStandardLine(id) {
     var rows = parameterStandardRows(id);
     if (!rows.length) return null;
-    return [0, 480, 960, 1440].map(function (minute) {
-      return standardScoreFor(id, rowAtMinute(rows, minute));
-    });
+    return [100, 100, 100, 100];
   }
   function applyConfiguredStandard(id, series) {
     if (!series || id === "WQI" || id === "GI") return series;
@@ -508,8 +601,70 @@
     return Boolean(data.mode && data.mode !== "NO_DATA" && data.source && data.source !== "未匯入");
   }
   function hasDecisionOutput() {
+    return hasImport() && decisionCards().length > 0;
+  }
+  function decisionCards() {
     var data = runtime();
-    return hasImport() && Array.isArray(data.decisions) && data.decisions.length > 0;
+    var cabin = data.decisionCabin || data.scadaDashboardSummary && data.scadaDashboardSummary.decisionCabin || null;
+    var order = ["today", "week", "harvest", "cost", "risk", "equipment"];
+    if (cabin && typeof cabin === "object") {
+      return order.map(function (key) {
+        var card = cabin[key];
+        return card ? Object.assign({ type: key }, card) : null;
+      }).filter(Boolean);
+    }
+    return decisionCabinFromList(Array.isArray(data.decisions) ? data.decisions : [], order);
+  }
+  function decisionCabinFromList(list, order) {
+    var byType = {};
+    (list || []).forEach(function (card) {
+      var normalized = normalizeDecisionCardType(card && card.type);
+      if (normalized && !byType[normalized]) byType[normalized] = Object.assign({ type: normalized }, card);
+    });
+    return order.map(function (type) {
+      return byType[type] || fallbackDecisionCabinCard(type);
+    });
+  }
+  function normalizeDecisionCardType(type) {
+    if (type === "device") return "equipment";
+    if (["today", "week", "harvest", "cost", "risk", "equipment"].indexOf(type) >= 0) return type;
+    return "today";
+  }
+  function fallbackDecisionCabinCard(type) {
+    var zhTitle = {
+      today: "今日決策待命",
+      week: "本週決策待命",
+      harvest: "收成決策待命",
+      cost: "成本決策待命",
+      risk: "風險決策待命",
+      equipment: "設備決策待命"
+    };
+    var enTitle = {
+      today: "Today standby",
+      week: "Week standby",
+      harvest: "Harvest standby",
+      cost: "Cost standby",
+      risk: "Risk standby",
+      equipment: "Equipment standby"
+    };
+    return {
+      type: type,
+      titleZh: zhTitle[type] || "決策待命",
+      titleEn: enTitle[type] || "Decision standby",
+      triggerReasonZh: "目前沒有此類別的主動事件。",
+      triggerReasonEn: "No active event in this category.",
+      recommendedActionZh: "持續監測，等待下一輪專家計算。",
+      recommendedActionEn: "Keep monitoring until the next expert calculation.",
+      expectedEffectZh: "保持決策艙六項欄位固定。",
+      expectedEffectEn: "Keep the six decision cabin slots stable.",
+      businessImpactZh: "讓 SCADA 與平台畫面維持一致。",
+      businessImpactEn: "Keep SCADA and platform views consistent.",
+      confidence: "low",
+      authority: "notify_only",
+      primaryAction: "monitor",
+      status: "active",
+      light: "green"
+    };
   }
   function esc(value) {
     return String(value == null ? "" : value).replace(/[&<>"']/g, function (ch) {
@@ -522,6 +677,40 @@
   function showValue(value, suffix) {
     if (value == null || value === "") return t("未設定");
     return String(value) + (suffix || "");
+  }
+  function pondAreaUnitOptions() {
+    return [
+      { value: "m2", label: "m2", labelEn: "m2", factor: 1 },
+      { value: "fen", label: "\u5206\u5730", labelEn: "fen", factor: 293.4 },
+      { value: "jia", label: "\u7532\u5730", labelEn: "jia", factor: 9699 }
+    ];
+  }
+  function pondAreaFactor(unit) {
+    var option = pondAreaUnitOptions().find(function (item) { return item.value === unit; });
+    return option ? option.factor : 1;
+  }
+  function pondAreaInputValue(cfg) {
+    if (cfg.pondAreaValue !== undefined && cfg.pondAreaValue !== "") return cfg.pondAreaValue;
+    var unit = cfg.pondAreaUnit || "m2";
+    var value = Number(cfg.pondAreaM2 || 0);
+    if (!value) return "";
+    return Math.round(value / pondAreaFactor(unit) * 1000) / 1000;
+  }
+  function pondAreaUnitSelect(unit) {
+    var selected = unit || "m2";
+    return '<select id="site_pondAreaUnit">' + pondAreaUnitOptions().map(function (item) {
+      return '<option value="' + esc(item.value) + '"' + (item.value === selected ? " selected" : "") + '>' + esc(isEn() ? item.labelEn : item.label) + '</option>';
+    }).join("") + '</select>';
+  }
+  function pondAreaM2FromInput(value, unit) {
+    var n = Number(value);
+    if (!Number.isFinite(n) || n <= 0) return "";
+    return Math.round(n * pondAreaFactor(unit) * 10) / 10;
+  }
+  function renderPondAreaField(field, cfg) {
+    var label = isEn() && field.labelEn ? field.labelEn : field.label;
+    var unit = cfg.pondAreaUnit || "m2";
+    return '<div class="field pondAreaField"><label>' + esc(label || l("\u6c60\u9762\u7a4d", "Pond area")) + '</label><div class="areaInputGroup"><input id="site_pondAreaValue" type="number" step="0.001" value="' + esc(pondAreaInputValue(cfg)) + '" placeholder="' + esc(l("\u8acb\u8f38\u5165\u9762\u7a4d", "Area")) + '">' + pondAreaUnitSelect(unit) + '</div><input id="site_pondAreaM2" type="hidden" value="' + esc(cfg.pondAreaM2 || "") + '"></div>';
   }
   function stockingDensity(cfg) {
     var count = Number(cfg.stockingCount || 0);
@@ -593,6 +782,11 @@
   }
   function enterTemplatePage(page) {
     var target = page || "overview";
+    var route = templateRoutes(template(config())).find(function (item) { return item.id === target; });
+    if (route && route.url && root.location) {
+      root.location.href = route.url;
+      return;
+    }
     if (isMobile()) {
       if (root.location && root.location.hash) root.location.hash = "";
       mount(lastRoot, target);
@@ -608,10 +802,19 @@
   function renderCustomParameterSettings(cfg) {
     var rows = rawCustomParameterRows(cfg);
     if (!rows.length) rows = [{ id: "", label: "", unit: "", weight: "", sensorInstalled: true }];
-    return '<section class="standardSettings customParameterSettings"><div class="sectionTitle standardTitleRow"><div><h3>' + esc(l("自訂感測器參數", "Custom Sensor Parameters")) + '</h3><p>' + esc(l("選填。可新增 NH4/NO2、濁度或其他案場參數；資料匯入時 parameterId 對應此代碼即可顯示。", "Optional. Add NH4/NO2, turbidity, or other site-specific parameters. Imported data will display when its parameterId matches this code.")) + '</p></div><button type="button" class="actionButton" id="addCustomParameter">' + esc(l("新增參數", "Add Parameter")) + '</button></div>' +
+    var tpl = template(cfg);
+    var customHelp = cfg && cfg.species === "hydroponicVegetables"
+      ? l("\u9078\u586b\u3002N/P/K \u70ba\u672a\u4f86\u9032\u968e\u990a\u5206\u8a3a\u65b7\uff0c\u4e0d\u53ef\u53d6\u4ee3 EC/pH \u6216\u76f4\u63a5\u63a7\u5236\u80a5\u6599\u6cf5\uff1b\u4e5f\u53ef\u65b0\u589e\u8449\u9762\u6fd5\u5ea6\u3001\u56de\u6db2 EC \u8207\u5916\u6c23\u53c3\u6578\u3002", "Optional. N/P/K are future nutrient diagnostics and must not replace EC/pH or directly control fertilizer pumps; leaf wetness, return-flow EC, and outside-air parameters can also be added.")
+      : l("\u9078\u586b\u3002\u53ef\u65b0\u589e NH4/NO2\u3001\u6fc1\u5ea6\u6216\u5176\u4ed6\u6848\u5834\u53c3\u6578\uff1b\u8cc7\u6599\u532f\u5165\u6642 parameterId \u5c0d\u61c9\u6b64\u4ee3\u78bc\u5373\u53ef\u986f\u793a\u3002", "Optional. Add NH4/NO2, turbidity, or other site-specific parameters. Imported data will display when its parameterId matches this code.");
+    var titleHtml = isMobile()
+      ? '<div class="sectionTitle standardTitleRow titleless"><button type="button" class="actionButton" id="addCustomParameter">' + esc(l("\u65b0\u589e\u53c3\u6578", "Add Parameter")) + '</button></div>'
+      : '<div class="sectionTitle standardTitleRow"><div><h3>' + esc(l("\u81ea\u8a02\u611f\u6e2c\u5668\u53c3\u6578", "Custom Sensor Parameters")) + '</h3><p>' + esc(customHelp) + '</p></div><button type="button" class="actionButton" id="addCustomParameter">' + esc(l("\u65b0\u589e\u53c3\u6578", "Add Parameter")) + '</button></div>';
+    return '<section class="standardSettings customParameterSettings">' + titleHtml +
       '<div class="customParamRows">' + rows.map(function (row, index) { return renderCustomParameterRow(row, index); }).join("") + '</div></section>';
   }
   function customParameterPresets() {
+    var tpl = template(config());
+    if (tpl && Array.isArray(tpl.customParameterPresets) && tpl.customParameterPresets.length) return tpl.customParameterPresets;
     return [
       { id: "NH4", label: "NH4/NH3", labelEn: "NH4/NH3", unit: "mg/L", weight: "選配" },
       { id: "NO2", label: "NO2", labelEn: "NO2", unit: "mg/L", weight: "選配" },
@@ -642,30 +845,63 @@
   }
   function renderStandardSettings(cfg, tpl) {
     var params = templateParameters(cfg).map(function (param) {
-      var rows = customStandardRows(param.id, cfg);
-      if (!rows.length) rows = [emptyStandardRow()];
-      var stateLabel = customStandardRows(param.id, cfg).length ? l("使用客戶自訂", "Using customer custom standard") : l("選填，未填則套用系統標準", "Optional. Blank fields apply the system standard.");
-      return '<details class="standardParam"><summary><strong>' + esc(labelOf(param) || param.id) + '</strong><span>' + esc(stateLabel) + '</span></summary><div class="standardRows">' + rows.map(function (row, index) {
+      var customRows = customStandardRows(param.id, cfg);
+      var rows = parameterStandardRows(param.id, cfg);
+      if (!rows.length) rows = standardEditorRows();
+      var templateRows = tpl && tpl.standardProfiles && tpl.standardProfiles[param.id] ? tpl.standardProfiles[param.id] : [];
+      var isTemplateStandard = templateRows.length && standardsEqual(rows, templateRows);
+      var stateLabel = customRows.length && !isTemplateStandard ? l("\u4f7f\u7528\u81ea\u8a02", "Custom") : l("\u4f9d\u7cfb\u7d71\u6a19\u6e96\u5224\u5b9a", "System standard applied");
+      if (cfg && cfg.species === "hydroponicVegetables" && param.id === "leafTempC") {
+        return renderLeafTempStandardParam(param, rows, stateLabel);
+      }
+      return '<details class="standardParam"><summary><div class="standardSummaryMain"><strong>' + esc(labelOf(param) || param.id) + '</strong><div class="standardSummaryText">' + standardSummary(param.id, cfg) + '</div></div><span>' + esc(stateLabel) + '</span></summary><div class="standardHelp">' + esc(l("\u82e5\u73fe\u5834\u9700\u8981\u8abf\u6574\uff0c\u53ef\u5206\u65e5\u9593\u8207\u591c\u9593\u586b\u5beb\u81ea\u8a02\u7bc4\u570d\u3002", "Add day/night override ranges only when site-specific tuning is needed.")) + '</div><div class="standardRows">' + rows.map(function (row, index) {
         return renderStandardRow(param, row, index);
       }).join("") + '</div></details>';
     }).join("");
-    return '<section class="standardSettings"><div class="sectionTitle standardTitleRow"><div><h3>' + esc(l("參數標準線自訂", "Parameter Standard Line Custom")) + '</h3><p>' + esc(l("選填。未填寫時，平台會自動套用白蝦系統標準；有填寫時，優先使用客戶自訂標準。", "Optional. Blank fields automatically apply the white shrimp system standard. Filled fields take priority as customer custom standards.")) + '</p></div><button type="button" class="actionButton danger" id="clearParameterStandards">' + esc(l("清除自訂標準", "Clear Custom Standard")) + '</button></div>' + params + '</section>';
+    var titleHtml = isMobile() ? '<div class="sectionTitle standardTitleRow titleless"><button type="button" class="actionButton danger" id="clearParameterStandards">' + esc(l("\u6e05\u9664\u81ea\u8a02\u6a19\u6e96", "Clear Custom Standard")) + '</button></div>' : '<div class="sectionTitle standardTitleRow"><div><h3>' + esc(l("\u53c3\u6578\u6a19\u6e96\u81ea\u8a02", "Parameter Standard Overrides")) + '</h3></div><button type="button" class="actionButton danger" id="clearParameterStandards">' + esc(l("\u6e05\u9664\u81ea\u8a02\u6a19\u6e96", "Clear Custom Standard")) + '</button></div>';
+    return '<section class="standardSettings">' + titleHtml + params + '</section>';
+  }
+  function renderLeafTempStandardParam(param, rows, stateLabel) {
+    var sourceRows = Array.isArray(rows) && rows.length ? rows.slice(0, 2) : [];
+    var defaults = [
+      { label: "第一次量測", start: "11:00", end: "", idealMin: "", idealMax: "", warningMin: "", warningMax: "", dangerMin: "", dangerMax: "" },
+      { label: "第二次量測", start: "14:00", end: "", idealMin: "", idealMax: "", warningMin: "", warningMax: "", dangerMin: "", dangerMax: "" }
+    ];
+    var normalizedRows = defaults.map(function (fallback, index) {
+      return Object.assign({}, fallback, sourceRows[index] || {});
+    });
+    function rowHtml(row, index) {
+      var base = "std_" + param.id + "_" + index + "_";
+      function val(key) { var value = row[key]; return esc(value == null ? "" : value); }
+      return '<div class="standardRow leafTempStandardRow" data-standard-param="' + esc(param.id) + '" data-standard-index="' + index + '"><input type="hidden" id="' + base + 'label" value="' + esc(row.label || defaults[index].label) + '"><input type="hidden" id="' + base + 'end" value="' + esc(row.end || "") + '"><label>' + esc(row.label || defaults[index].label) + '<input type="time" id="' + base + 'start" value="' + esc(row.start || defaults[index].start) + '"></label><div class="rangePair leafTempThreshold"><span>' + esc(l("理想範圍", "Ideal Range")) + '</span><input type="number" step="0.1" id="' + base + 'idealMin" value="' + val("idealMin") + '" placeholder="' + esc(l("下限", "Low")) + '"><input type="number" step="0.1" id="' + base + 'idealMax" value="' + val("idealMax") + '" placeholder="' + esc(l("上限", "High")) + '"></div><div class="rangePair leafTempThreshold"><span>' + esc(l("注意範圍", "Caution Range")) + '</span><input type="number" step="0.1" id="' + base + 'warningMin" value="' + val("warningMin") + '" placeholder="' + esc(l("下限", "Low")) + '"><input type="number" step="0.1" id="' + base + 'warningMax" value="' + val("warningMax") + '" placeholder="' + esc(l("上限", "High")) + '"></div><div class="rangePair leafTempThreshold"><span>' + esc(l("危險範圍", "Danger Range")) + '</span><input type="number" step="0.1" id="' + base + 'dangerMin" value="' + val("dangerMin") + '" placeholder="' + esc(l("下限", "Low")) + '"><input type="number" step="0.1" id="' + base + 'dangerMax" value="' + val("dangerMax") + '" placeholder="' + esc(l("上限", "High")) + '"></div></div>';
+    }
+    return '<details class="standardParam leafTempStandardParam" open><summary><div class="standardSummaryMain"><strong>' + esc(labelOf(param) || param.id) + '</strong><div class="standardSummaryText"><span><b>' + esc(l("量測排程", "Measurement Schedule")) + '</b> ' + esc(l("每日兩次", "Twice daily")) + '</span><span><b>' + esc(l("判定標準", "Decision Standard")) + '</b> ' + esc(l("兩次量測各自設定", "Separate thresholds per measurement")) + '</span></div></div><span>' + esc(stateLabel) + '</span></summary><div class="standardHelp">' + esc(l("葉溫是定點人工量測，預設 11:00 與 14:00；每次量測可分別調整時間與理想、注意、危險範圍。", "Leaf temperature is scheduled manual measurement. Defaults are 11:00 and 14:00; each measurement has its own time and thresholds.")) + '</div><div class="standardRows leafTempStandardRows">' + normalizedRows.map(rowHtml).join("") + '</div></details>';
+  }
+  function standardEditorRows() {
+    return [
+      Object.assign(emptyStandardRow(), { label: "\u65e5\u9593", start: "06:00", end: "18:00" }),
+      Object.assign(emptyStandardRow(), { label: "\u591c\u9593", start: "18:00", end: "06:00" })
+    ];
+  }
+  function standardSummary(id, cfg) {
+    return '<span><b>' + esc(l("\u672a\u81ea\u8a02\u6642\u5957\u7528\u7cfb\u7d71\u5efa\u8b70", "System recommendation applies when no custom range is set")) + '</b></span>';
   }
   function renderStandardRow(param, row, index) {
     var base = 'std_' + param.id + '_' + index + '_';
-    return '<div class="standardRow" data-standard-param="' + esc(param.id) + '" data-standard-index="' + index + '">' +
-      '<label>' + esc(l("時段", "Time Window")) + '<input id="' + base + 'label" value="' + esc(row.label || "") + '"></label>' +
-      '<label>' + esc(l("開始", "Start")) + '<input type="time" id="' + base + 'start" value="' + esc(row.start || "") + '"></label>' +
-      '<label>' + esc(l("結束", "End")) + '<input type="time" id="' + base + 'end" value="' + esc(row.end || "") + '"></label>' +
-      '<label>' + esc(l("理想低", "Ideal Low")) + '<input type="number" step="0.1" id="' + base + 'idealMin" value="' + esc(row.idealMin == null ? "" : row.idealMin) + '"></label>' +
-      '<label>' + esc(l("理想高", "Ideal High")) + '<input type="number" step="0.1" id="' + base + 'idealMax" value="' + esc(row.idealMax == null ? "" : row.idealMax) + '"></label>' +
-      '<label>' + esc(l("警戒低", "Warning Low")) + '<input type="number" step="0.1" id="' + base + 'warningMin" value="' + esc(row.warningMin == null ? "" : row.warningMin) + '"></label>' +
-      '<label>' + esc(l("警戒高", "Warning High")) + '<input type="number" step="0.1" id="' + base + 'warningMax" value="' + esc(row.warningMax == null ? "" : row.warningMax) + '"></label>' +
-      '<label>' + esc(l("危險低", "Danger Low")) + '<input type="number" step="0.1" id="' + base + 'dangerMin" value="' + esc(row.dangerMin == null ? "" : row.dangerMin) + '"></label>' +
-      '<label>' + esc(l("危險高", "Danger High")) + '<input type="number" step="0.1" id="' + base + 'dangerMax" value="' + esc(row.dangerMax == null ? "" : row.dangerMax) + '"></label>' +
+    function val(key) { var value = row[key]; return esc(value == null ? "" : value); }
+    return '<div class="standardRow standardRangeRow" data-standard-param="' + esc(param.id) + '" data-standard-index="' + index + '">' +
+      '<label class="timeNameField">' + esc(l("\u6642\u6bb5", "Period")) + '<select id="' + base + 'label"><option value="\u65e5\u9593"' + (String(row.label || "") === "\u591c\u9593" ? "" : " selected") + '>' + esc(l("\u65e5\u9593", "Day")) + '</option><option value="\u591c\u9593"' + (String(row.label || "") === "\u591c\u9593" ? " selected" : "") + '>' + esc(l("\u591c\u9593", "Night")) + '</option></select></label>' +
+      '<label>' + esc(l("\u958b\u59cb", "Start")) + '<input type="text" inputmode="numeric" pattern="[0-2][0-9]:[0-5][0-9]" id="' + base + 'start" value="' + esc(row.start || "") + '" placeholder="00:00"></label>' +
+      '<label>' + esc(l("\u7d50\u675f", "End")) + '<input type="text" inputmode="numeric" pattern="[0-2][0-9]:[0-5][0-9]" id="' + base + 'end" value="' + esc(row.end || "") + '" placeholder="23:59"></label>' +
+      '<div class="rangePair"><span>' + esc(l("\u7406\u60f3\u7bc4\u570d", "Ideal Range")) + '</span><input type="number" step="0.1" id="' + base + 'idealMin" value="' + val("idealMin") + '" placeholder="' + esc(l("\u4e0b\u9650", "Low")) + '"><input type="number" step="0.1" id="' + base + 'idealMax" value="' + val("idealMax") + '" placeholder="' + esc(l("\u4e0a\u9650", "High")) + '"></div>' +
+      '<div class="rangePair"><span>' + esc(l("\u6ce8\u610f\u7bc4\u570d", "Caution Range")) + '</span><input type="number" step="0.1" id="' + base + 'warningMin" value="' + val("warningMin") + '" placeholder="' + esc(l("\u4e0b\u9650", "Low")) + '"><input type="number" step="0.1" id="' + base + 'warningMax" value="' + val("warningMax") + '" placeholder="' + esc(l("\u4e0a\u9650", "High")) + '"></div>' +
+      '<div class="rangePair"><span>' + esc(l("\u5371\u96aa\u7bc4\u570d", "Danger Range")) + '</span><input type="number" step="0.1" id="' + base + 'dangerMin" value="' + val("dangerMin") + '" placeholder="' + esc(l("\u4e0b\u9650", "Low")) + '"><input type="number" step="0.1" id="' + base + 'dangerMax" value="' + val("dangerMax") + '" placeholder="' + esc(l("\u4e0a\u9650", "High")) + '"></div>' +
     '</div>';
   }
   function renderStockingDensityPreview(cfg) {
+    if (cfg && cfg.species === "hydroponicVegetables") {
+      return '<div class="derivedInfo"><span>' + esc(l("栽培區數", "Cultivation Zones")) + '</span><strong>' + esc(showValue(cfg.stockingCount, isEn() ? " zones" : " 區")) + '</strong></div><div class="derivedInfo"><span>' + esc(l("床層面積", "Bed Area")) + '</span><strong>' + esc(showValue(cfg.pondAreaM2 || cfg.pondAreaValue, " m2")) + '</strong></div>';
+    }
     var density = cfg.stockingDensityPerM2 != null ? cfg.stockingDensityPerM2 : stockingDensity(cfg);
     var targetWeight = formatTargetWeightFromSpec(cfg.targetSpec);
     return '<div class="derivedInfo"><span>' + esc(l("放養密度", "Stocking Density")) + '</span><strong>' + esc(showValue(density, isEn() ? " shrimp/m2" : " 尾/m2")) + '</strong></div><div class="derivedInfo"><span>' + esc(l("目標單尾重", "Target Weight")) + '</span><strong>' + esc(targetWeight) + '</strong></div>';
@@ -677,7 +913,15 @@
     function collectSiteConfig(tpl) {
       var next = {};
       if (!tpl || !tpl.siteFields) return next;
-      tpl.siteFields.forEach(function (field) { next[field.id] = val("site_" + field.id); });
+      tpl.siteFields.forEach(function (field) {
+        if (field.id === "pondAreaM2") {
+          next.pondAreaValue = val("site_pondAreaValue");
+          next.pondAreaUnit = val("site_pondAreaUnit") || "m2";
+          next.pondAreaM2 = pondAreaM2FromInput(next.pondAreaValue, next.pondAreaUnit);
+          return;
+        }
+        next[field.id] = val("site_" + field.id);
+      });
       if (!next.breed) next.breed = tpl.defaultBreed || tpl.scientificName || "";
       Object.assign(next, cultureMetrics(next));
       Object.assign(next, targetSpecRule(next.targetSpec));
@@ -704,8 +948,8 @@
       var out = {};
       var nextState = Object.assign({}, config(), nextConfig || {});
       templateParameters(nextState).forEach(function (param) {
-        var sourceRows = customStandardRows(param.id, nextState);
-        if (!sourceRows.length) sourceRows = [emptyStandardRow()];
+        var sourceRows = parameterStandardRows(param.id, nextState);
+        if (!sourceRows.length) sourceRows = standardEditorRows();
         var rows = sourceRows.map(function (row, index) {
           var base = "std_" + param.id + "_" + index + "_";
           return {
@@ -719,8 +963,8 @@
             dangerMin: numberOrBlank(val(base + "dangerMin")),
             dangerMax: numberOrBlank(val(base + "dangerMax"))
           };
-        }).filter(hasCustomStandardValue);
-        if (rows.length) out[param.id] = rows;
+        });
+        if (rows.some(hasBackendStandardValue)) out[param.id] = rows;
       });
       return out;
     }
@@ -738,6 +982,43 @@
       suppressNextConfigRemount = !navigate;
       Settings.saveConfig(collectSiteConfig(tpl));
       if (navigate) enterTemplatePage("overview");
+    }
+    function resetToTemplateDefaults() {
+      var cfg = config();
+      var tpl = template(cfg);
+      if (!tpl) {
+        Settings.clearPlatformState();
+        mount(lastRoot, "settings");
+        return;
+      }
+      var reset = {
+        industry: cfg.industry,
+        species: cfg.species,
+        templateId: cfg.templateId,
+        defaultTemplate: cfg.defaultTemplate,
+        allowedTemplates: cfg.allowedTemplates,
+        language: cfg.language,
+        demoMode: cfg.demoMode,
+        parameterStandards: {},
+        customParameters: [],
+        customParametersByTemplate: {},
+        scopedParameterStandards: {}
+      };
+      (tpl.siteFields || []).forEach(function (field) {
+        if (field.id === "breed") reset.breed = tpl.defaultBreed || tpl.scientificName || "";
+        else if (field.id === "pondAreaM2") {
+          reset.pondAreaValue = "";
+          reset.pondAreaUnit = "m2";
+          reset.pondAreaM2 = "";
+        } else {
+          reset[field.id] = "";
+        }
+      });
+      Object.assign(reset, cultureMetrics(reset));
+      Object.assign(reset, targetSpecRule(reset.targetSpec));
+      reset.stockingDensityPerM2 = stockingDensity(reset);
+      Settings.saveConfig(reset);
+      mount(lastRoot, "settings");
     }
     if (industry) industry.onchange = function () { Settings.saveConfig({ industry: industry.value, species: "" }); mount(lastRoot, "settings"); };
     if (species) species.onchange = function () { Settings.saveConfig({ industry: val("setupIndustry"), species: species.value }); mount(lastRoot, "settings"); };
@@ -795,6 +1076,25 @@
         mount(lastRoot, "settings");
       };
     });
+    ["site_pondAreaValue", "site_pondAreaUnit"].forEach(function (id) {
+      var input = el(id);
+      if (input) input.onchange = function () {
+        persistSiteConfig(false);
+        var preview = el("cultureProgressPreview");
+        if (!preview) return;
+        var previewCfg = Object.assign({}, config(), {
+          pondAreaValue: val("site_pondAreaValue"),
+          pondAreaUnit: val("site_pondAreaUnit") || "m2"
+        });
+        previewCfg.pondAreaM2 = pondAreaM2FromInput(previewCfg.pondAreaValue, previewCfg.pondAreaUnit);
+        if (isHydroponicTemplate(template(config()))) {
+          preview.innerHTML = renderHydroCultivationProgress(previewCfg);
+        } else {
+          previewCfg.stockingDensityPerM2 = stockingDensity(previewCfg);
+          preview.innerHTML = renderCultureProgress(previewCfg, {}) + renderStockingDensityPreview(previewCfg);
+        }
+      };
+    });
     ["site_stockingDate", "site_plannedHarvestDate"].forEach(function (id) {
       var input = el(id);
       if (input) input.onchange = function () {
@@ -805,7 +1105,11 @@
           stockingDate: val("site_stockingDate"),
           plannedHarvestDate: val("site_plannedHarvestDate")
         });
-        preview.innerHTML = renderCultureProgress(previewCfg, {}) + renderStockingDensityPreview(previewCfg);
+        if (isHydroponicTemplate(template(config()))) {
+          preview.innerHTML = renderHydroCultivationProgress(previewCfg);
+        } else {
+          preview.innerHTML = renderCultureProgress(previewCfg, {}) + renderStockingDensityPreview(previewCfg);
+        }
       };
     });
     if (save) save.onclick = function () {
@@ -818,7 +1122,7 @@
       persistSiteConfig(true);
     };
     var clear = el("clearPlatform");
-    if (clear) clear.onclick = function () { Settings.clearPlatformState(); mount(lastRoot, "settings"); };
+    if (clear) clear.onclick = resetToTemplateDefaults;
     var clearStandards = el("clearParameterStandards");
     if (clearStandards) clearStandards.onclick = function () {
       Settings.saveConfig({ parameterStandards: {} });
@@ -833,7 +1137,7 @@
   }
 
   function renderOverview() {
-    if (!isMobile()) return '<div class="desktopOverview"><div class="desktopColumn">' + renderSitePanel() + renderWqiPanel() + '</div><div class="desktopColumn desktopMain">' + renderGiPanel() + renderVisionPanel() + '</div><div class="desktopColumn">' + renderAiPanel() + renderWeatherPanel() + renderDeviceStatusPanel() + '</div></div>';
+    if (!isMobile()) return '<div class="desktopOverview"><div class="desktopColumn">' + renderWqiPanel() + '</div><div class="desktopColumn desktopMain">' + renderGiPanel() + renderVisionPanel() + '</div><div class="desktopColumn">' + renderAiPanel() + renderWeatherPanel() + renderDeviceStatusPanel() + '</div></div>';
     var selected = config().mobileOverviewMetric === "GI" ? "GI" : "WQI";
     return wrap('<section class="' + cardClass() + '"><div class="' + headClass() + '"><h2>' + esc(l("總覽", "Overview")) + '</h2><span class="badge">' + esc(config().pondId || l("未設定", "Not set")) + '</span></div><div class="' + bodyClass() + ' stack"><div class="mobileMetricGrid">' + metricCard("WQI", hasImport() ? runtime().wqi : "--", hasImport() ? runtimeLabel(runtime(), "wqiLabel", l("已計算", "Calculated")) : l("未計算", "Not calculated"), hasImport() ? l("扣分來源", "Deduction Source") + ": " + runtimeLabel(runtime(), "rootCause", l("無", "None")) : l("等待水質資料", "Waiting for water quality data"), selected === "WQI", "WQI") + metricCard("GI", hasImport() ? (runtime().giScore || "--") : "--", hasImport() ? l("資料待接", "Data pending") : l("未計算", "Not calculated"), giNote(), selected === "GI", "GI") + '</div>' + renderMobileOverviewDetail(selected) + renderAiSummary() + '</div></section>');
   }
@@ -858,7 +1162,8 @@
   }
 
   function metricCard(title, value, label, note, active, detailKey) {
-    var light = title === "WQI" ? lightForScore(value, runtime().wqiLight) : title === "GI" ? lightForScore(value, runtime().giLight || "green") : lightForScore(value, "yellow");
+    var fallbackLight = title === "WQI" ? runtime().wqiLight : title === "GI" ? runtime().giLight : "yellow";
+    var light = fallbackLight || lightForScore(value, "yellow");
     var scoreHtml = hasImport() && (title === "WQI" || title === "GI") ? '<span class="miniScoreRing ' + esc(light) + '" style="--ring-pct:' + Math.max(0, Math.min(100, Number(value) || 0)) + '%"><b>' + esc(value) + '</b></span>' : '<strong>' + esc(value) + '</strong>';
     return '<article class="mobileMetric ' + (active ? "active" : "") + '"' + (detailKey ? ' data-mobile-overview="' + esc(detailKey) + '"' : "") + '><div class="row"><h3>' + esc(title) + '</h3><span class="badge">' + dot(hasImport() ? light : "yellow") + esc(label) + '</span></div>' + scoreHtml + '<p class="muted">' + esc(note) + '</p></article>';
   }
@@ -901,8 +1206,7 @@
       '<p><span>' + esc(l("預估收成日", "Planned Harvest Date")) + '</span><strong>' + esc(showValue(cfg.plannedHarvestDate)) + '</strong></p>' +
       '<p><span>' + esc(l("放養尾數", "Stocking Count")) + '</span><strong>' + esc(showValue(cfg.stockingCount, isEn() ? " shrimp" : " 尾")) + '</strong></p>' +
       '<p><span>' + esc(l("放養密度", "Stocking Density")) + '</span><strong>' + esc(showValue(density, isEn() ? " shrimp/m2" : " 尾/m2")) + '</strong></p>' +
-      '<p><span>' + esc(l("池面積", "Pond Area")) + '</span><strong>' + esc(showValue(cfg.pondAreaM2, " m2")) + '</strong></p>' +
-      '<p><span>' + esc(l("水量", "Water Volume")) + '</span><strong>' + esc(showValue(cfg.waterVolumeM3, " m3")) + '</strong></p>' +
+      '<p><span>' + esc(l("池面積", "Pond Area")) + '</span><strong>' + esc(showValue(cfg.pondAreaM2, " m2") + (cfg.pondAreaUnit && cfg.pondAreaUnit !== "m2" && cfg.pondAreaValue ? " (" + cfg.pondAreaValue + " " + (cfg.pondAreaUnit === "fen" ? "\u5206\u5730" : cfg.pondAreaUnit === "jia" ? "\u7532\u5730" : cfg.pondAreaUnit) + ")" : "")) + '</strong></p>' +
       '</div>' + renderCultureProgress(cfg, runtime()) + '</div></section>';
   }
   function renderWqiPanel() {
@@ -919,9 +1223,10 @@
   }
   function renderVisionPanel() {
     var vision = runtime().underwaterVision || runtime().vision || {};
+    var iframeUrl = hasImport() ? (vision.iframeUrl || vision.streamUrl || "") : "";
     var videoUrl = hasImport() ? resolveAssetUrl(vision.videoUrl || vision.clipUrl || "") : "";
     var imageUrl = hasImport() ? resolveAssetUrl(vision.imageUrl || vision.frameUrl || vision.previewUrl || "") : "";
-    var media = videoUrl ? '<video src="' + esc(videoUrl) + '" autoplay muted loop playsinline controls preload="metadata"></video>' : imageUrl
+    var media = iframeUrl ? '<iframe src="' + esc(iframeUrl) + '" title="Underwater live video" loading="lazy" allow="autoplay; fullscreen" referrerpolicy="no-referrer-when-downgrade"></iframe>' : videoUrl ? '<video src="' + esc(videoUrl) + '" autoplay muted loop playsinline controls preload="metadata"></video>' : imageUrl
       ? '<img src="' + esc(imageUrl) + '" alt="水下即時影像">'
       : '<div class="visionPlaceholder"><strong>尚未匯入影像資料</strong></div>';
     return '<section class="panel"><div class="panelHeader"><h2>水下影像 AI</h2></div><div class="panelBody desktopVision"><div class="visionBox">' + media + '</div><div class="stack"><p>AI 體長：' + esc(hasImport() && vision.bodyLengthCm != null ? vision.bodyLengthCm + " cm" : "--") + '</p><p>轉換體重：' + esc(hasImport() && vision.bodyWeightG != null ? vision.bodyWeightG + " g" : "--") + '</p><p>估計尾數：' + esc(hasImport() && vision.estimatedCountPerLb != null ? vision.estimatedCountPerLb + " 尾/磅" : "--") + '</p><p>影像可信度：' + esc(hasImport() && vision.confidencePct != null ? vision.confidencePct + "%" : "等待資料") + '</p></div></div></section>';
@@ -933,12 +1238,12 @@
     return '<section class="panel"><div class="panelHeader"><h2>' + esc(l("微氣象站 / 72h 預測", "Micro Weather / 72h Forecast")) + '</h2></div><div class="panelBody stack">' + rows.map(function (row) { return '<p>' + esc(row) + '</p>'; }).join("") + '</div></section>';
   }
   function renderAiPanel() {
-    var decisions = runtime().decisions || [];
+    var decisions = decisionCards();
     if (!hasDecisionOutput()) return emptyPanel("AI 決策支援", "等待資料匯入");
     return '<section class="panel"><div class="panelHeader"><h2>AI 決策支援</h2></div><div class="panelBody">' + renderDecisionCard(decisions[0]) + '</div></section>';
   }
   function renderAiSummary() {
-    var decisions = runtime().decisions || [];
+    var decisions = decisionCards();
     if (!hasDecisionOutput()) return '<article class="mobileCard warn"><div class="mobileCardBody"><h3>AI 決策支援</h3><p>等待資料匯入</p></div></article>';
     return '<article class="mobileCard warn"><div class="mobileCardBody">' + renderDecisionCard(decisions[0]) + '</div></article>';
   }
@@ -954,7 +1259,7 @@
     return wrap('<section class="' + cardClass() + '"><div class="' + headClass() + '"><h2>AI 回控</h2></div><div class="' + bodyClass() + ' stack">' + renderDevicePanel() + renderControlForecast() + '</div></section>');
   }
   function renderDecisionsPage() {
-    var decisions = runtime().decisions || [];
+    var decisions = decisionCards();
     var html = hasDecisionOutput() ? '<div class="' + (isMobile() ? "decisionList" : "desktopDecisionGrid") + '">' + decisions.map(renderDecisionCard).join("") + '</div>' : '<div class="emptyState"><h3>等待資料匯入</h3></div>';
     if (!isMobile()) return '<section class="panel desktopDecisionCabin"><div class="panelHeader"><h2>AI 智慧決策艙</h2></div><div class="panelBody">' + html + '</div></section>';
     return wrap('<section class="' + cardClass() + '"><div class="' + headClass() + '"><h2>AI 智慧決策艙</h2></div><div class="' + bodyClass() + '">' + html + '</div></section>');
@@ -985,11 +1290,12 @@
   function renderChartPanel(id, title, param) {
     var series = trendSeriesFor(id);
     var hasData = hasImport() && series && Array.isArray(series.actual) && series.actual.length;
-    var score = id === "WQI" ? runtime().wqi : (hasData && param ? param.score : "--");
-    var light = id === "WQI" ? runtime().wqiLight : (param && param.light) || lightForScore(score, "green");
-    var alertClass = hasData && (light === "red" || light === "yellow" || (id === "DO" && Number(score) < 60)) ? " alertGlow " + light : "";
+    var rawScore = id === "WQI" ? runtime().wqi : (hasData && param ? param.score : null);
+    var score = rawScore == null || rawScore === "" ? "--" : rawScore;
+    var light = id === "WQI" ? lightForScore(score, runtime().wqiLight) : effectiveParamLight(id, param);
+    var alertClass = hasData && (light === "red" || light === "yellow") ? " alertGlow " + light : "";
     var parameterMode = !isMobile() && lastPage === "parameter";
-    var side = parameterMode ? '<span class="chartNote">' + esc(chartNote(id, param)) + '</span>' : '<span class="scoreCapsule ' + esc(light) + '">' + esc(id === "WQI" ? "WQI " + (hasImport() ? runtime().wqi : "--") : "分數 " + score) + '</span>';
+    var side = parameterMode ? "" : '<span class="scoreCapsule ' + esc(light) + '">' + esc(id === "WQI" ? "WQI " + (hasImport() ? runtime().wqi : "--") : "分數 " + score) + '</span>';
     return '<article class="' + cardClass() + ' chartCard' + alertClass + '"><div class="chartHeader"><h3>' + esc(title) + '</h3>' + side + '</div>' + (hasData ? '<canvas class="chartCanvas" data-chart="' + esc(id) + '"></canvas>' : '<div class="emptyState"><h3>' + esc(l("尚無有效資料", "No valid data")) + '</h3></div>') + '</article>';
   }
   function chartNote(id, param) {
@@ -1001,6 +1307,12 @@
     if (id === "waterTempC") return "理想 28-32 C";
     if (id === "WQI") return "由五參數加權幾何平均";
     return "即時值與預測同步";
+  }
+  function ratioWindowButtons(cfg) {
+    var windowKey = (cfg || config()).ratioWindow || "24h";
+    return ["24h", "7d", "30d"].map(function (key) {
+      return '<button class="ratioWindowButton ' + (key === windowKey ? "active" : "") + '" data-ratio-window="' + esc(key) + '">' + esc(key) + '</button>';
+    }).join("");
   }
   function renderRootCausePanel() {
     if (!hasImport()) return emptyPanel("WQI 根因與燈號", "尚未計算");
@@ -1014,10 +1326,12 @@
     if (!hasImport()) return emptyPanel(panelTitle, "尚未計算");
     var map = {};
     map[selected] = selectedParam || runtimeParameter(selected);
-    return '<article class="' + cardClass() + '"><div class="' + headClass() + '"><h2>' + esc(panelTitle) + '</h2></div><div class="' + bodyClass() + '">' + renderLightRatio(map, ratioTitle) + '</div></article>';
+    var selectedLight = effectiveParamLight(selected, selectedParam);
+    var panelRiskLight = selectedLight === "red" || selectedLight === "yellow" ? " alertGlow " + selectedLight : "";
+    return '<article class="' + cardClass() + panelRiskLight + '"><div class="' + headClass() + '"><h2>' + esc(panelTitle) + '</h2><div class="ratioWindowSwitch">' + ratioWindowButtons(config()) + '</div></div><div class="' + bodyClass() + '">' + renderLightRatio(map, "") + '</div></article>';
   }
   function renderAutoHandlingPanel() {
-    var decisions = runtime().decisions || [];
+    var decisions = decisionCards();
     if (!hasDecisionOutput()) return emptyPanel("目前自動處理", "尚無處理動作");
     return '<section class="panel"><div class="panelHeader"><h2>目前自動處理</h2></div><div class="panelBody">' + renderDecisionCard(decisions[0]) + '</div></section>';
   }
@@ -1056,11 +1370,18 @@
     var selected = selectedParameterId(cfg);
     if (ids.indexOf(selected) < 0) selected = ids[0] || "DO";
     var selectedParam = params[selected] || runtimeParameter(selected);
+    var ratioPanelStatusLight = effectiveParamLight(selected, selectedParam);
+    var ratioPanelLight = ratioPanelStatusLight === "red" || ratioPanelStatusLight === "yellow" ? " alertGlow " + ratioPanelStatusLight : "";
     var tabs = ids.map(function (id) {
       var meta = parameterMeta(id);
       return '<button class="miniSwitch ' + (id === selected ? "active" : "") + '" data-ratio-param="' + esc(id) + '">' + esc(meta.shortLabel || meta.label || id) + '</button>';
     }).join("");
-    return '<article class="panel parameterAsidePanel"><div class="panelHeader"><h2>參數燈號占比</h2><span class="badge">24h</span></div><div class="panelBody stack"><div class="miniSwitchRow">' + tabs + '</div>' + renderLightRatio(selectedParam ? (function () { var map = {}; map[selected] = selectedParam; return map; })() : {}, (parameterMeta(selected).shortLabel || parameterMeta(selected).label || selected) + " 燈號時間占比") + '<p class="muted">可切換：24h / 7d / 30d；每個參數各自計算燈號占比。</p></div></article>';
+    var windowTabs = ratioWindowButtons(cfg);
+    var selectedLabel = parameterMeta(selected).shortLabel || parameterMeta(selected).label || selected;
+    var selectedScore = selectedParam && selectedParam.score != null && selectedParam.score !== "" ? selectedParam.score : "--";
+    var selectedLight = ratioPanelStatusLight || selectedParam && selectedParam.light || lightForScore(selectedScore, "");
+    var scorePill = '<span class="scoreCapsule paramScorePill ' + esc(selectedLight || "") + '">' + esc("\u5206\u6578 " + selectedScore) + '</span>';
+    return '<article class="panel parameterAsidePanel' + ratioPanelLight + '"><div class="panelHeader parameterRatioHeader"><div class="parameterRatioTitle"><h2>\u53c3\u6578\u71c8\u865f\u5360\u6bd4</h2><div class="parameterRatioName"><strong>' + esc(selectedLabel) + '</strong>' + scorePill + '</div></div><div class="ratioWindowSwitch">' + windowTabs + '</div></div><div class="panelBody stack"><div class="miniSwitchRow">' + tabs + '</div>' + renderLightRatio(selectedParam ? (function () { var map = {}; map[selected] = selectedParam; return map; })() : {}, "") + '</div></article>';
   }
   function renderParameterAutoPanel() {
     var devices = runtime().controlDevices || [];
@@ -1077,6 +1398,11 @@
   function renderCultureProgress(cfg, data) {
     var batch = hasImport() && data && data.batchTiming ? data.batchTiming : cultureMetrics(cfg);
     var pct = Number(batch.cultureProgressPct || 0);
+    if (cfg && cfg.species === "hydroponicVegetables") {
+      var hydroEndLabel = batch.plannedCultureDays ? "第 " + batch.plannedCultureDays + " 天" : "未設定";
+      var hydroMidLabel = batch.plannedCultureDays ? "第 " + Math.ceil(Number(batch.plannedCultureDays) / 2) + " 天" : "--";
+      return '<div><p>' + esc(l("栽培天數", "Cultivation Days")) + '：' + esc(batch.cultureDayLabelZh || l("未設定", "Not set")) + '</p><div class="progressTrack"><div class="progressBar" style="width:' + pct + '%"></div></div><div class="progressLabels"><span>0</span><span>' + esc(hydroMidLabel) + '</span><span>' + esc(hydroEndLabel) + '</span></div></div>';
+    }
     var endLabel = batch.plannedCultureDays ? "第 " + batch.plannedCultureDays + " 天" : "收成";
     var midLabel = batch.plannedCultureDays ? "第 " + Math.ceil(Number(batch.plannedCultureDays) / 2) + " 天" : "--";
     return '<div><p>養殖進度：' + esc(batch.cultureDayLabelZh || "未設定") + '</p><div class="progressTrack"><div class="progressBar" style="width:' + pct + '%"></div></div><div class="progressLabels"><span>0</span><span>' + esc(midLabel) + '</span><span>' + esc(endLabel) + '</span></div></div>';
@@ -1101,8 +1427,8 @@
         "夜間水車成本上升": "Night paddlewheel cost increase",
         "豪雨前預措": "Prepare before heavy rain",
         "校正 DO 感測器": "Calibrate DO sensor",
-        "DO 24h 綠燈占比下降，今晚預測耗氧壓力升高。": "DO green-light ratio declined over 24h; oxygen demand is forecast to increase tonight.",
-        "ORP 7d 黃燈時間比例略升。": "ORP yellow-light duration rose slightly over 7 days.",
+        "DO 24h 最佳占比下降，今晚預測耗氧壓力升高。": "DO best-status ratio declined over 24h; oxygen demand is forecast to increase tonight.",
+        "ORP 7d 注意時間比例略升。": "ORP caution-status duration rose slightly over 7 days.",
         "GI 符合 20/30 目標曲線。": "GI matches the 20/30 target curve.",
         "低氧預測提高水車運轉時數。": "Low-oxygen forecast increases paddlewheel runtime.",
         "24h 降雨預測升高。": "24h rainfall forecast is rising.",
@@ -1135,9 +1461,15 @@
       reason: langField(d, "triggerReason") || langField(d, "message") || langField(d, "rootCause"),
       action: langField(d, "recommendedAction") || d.primaryAction,
       effect: langField(d, "expectedEffect"),
-      impact: langField(d, "businessImpact") || confidenceText(d.confidence),
-      light: d.light || d.severity || "yellow"
+      impact: [langField(d, "businessImpact") || confidenceText(d.confidence), d.status ? "status: " + d.status : "", d.authority ? "authority: " + d.authority : ""].filter(Boolean).join(" · "),
+      light: d.light || lightForDecisionStatus(d.status) || d.severity || "yellow"
     };
+  }
+  function lightForDecisionStatus(status) {
+    if (status === "accepted") return "green";
+    if (status === "rejected" || status === "failed") return "red";
+    if (status === "pending") return "yellow";
+    return "";
   }
   function langField(obj, base) {
     if (!obj) return "";
@@ -1199,6 +1531,7 @@
     ];
   }
   function localDecisionType(type) {
+    if (type === "equipment") return l("設備決策", "Equipment");
     var zh = { today: "今日決策", week: "本週決策", harvest: "收成決策", cost: "成本決策", risk: "風險決策", device: "設備決策" };
     var en = { today: "Today", week: "This Week", harvest: "Harvest", cost: "Cost", risk: "Risk", device: "Device" };
     return (isEn() ? en : zh)[type] || l("決策", "Decision");
@@ -1214,17 +1547,65 @@
     return '<div class="deviceRow ' + (on ? "on" : "") + '"><strong>' + esc(device.displayName || device.channelName || device.id) + '</strong><span>' + esc(device.channelId || device.code || "") + '</span><span>' + esc(device.mode || "") + (device.speed != null ? " | " + esc(device.speed) + "%" : "") + '</span><button class="actionButton ' + (on ? "primary" : "") + '" data-toggle-device="' + esc(device.id) + '">' + esc(device.status || "OFF") + '</button></div>';
   }
   function renderLightRatio(parameters, title) {
-    var ratio = { blue: 0, green: 0, yellow: 0, orange: 0, red: 0 };
+    var ratio = { green: 0, yellow: 0, red: 0 };
+    var sourceLights = [];
     var count = 0;
     Object.keys(parameters || {}).forEach(function (key) {
       var p = parameters[key];
-      if (!p || p.sensorInstalled === false || !p.ratio) return;
+      if (!p || p.sensorInstalled === false) return;
+      var sourceRatio = ratioFromTrendSeries(key, config().ratioWindow || "24h") || p.ratio || (p.lightRatio && p.lightRatio.percentageByLight);
+      var hasRatio = sourceRatio && Object.keys(ratio).some(function (color) { return Number(sourceRatio[color] || 0) > 0; });
+      var fallbackLight = effectiveParamLight(key, p);
+      if (!hasRatio && fallbackLight) {
+        sourceRatio = { green: 0, yellow: 0, red: 0 };
+        sourceRatio[fallbackLight] = 100;
+      }
+      if (!sourceRatio) return;
+      if (fallbackLight) sourceLights.push(fallbackLight);
       count += 1;
-      Object.keys(ratio).forEach(function (color) { ratio[color] += Number(p.ratio[color] || 0); });
+      Object.keys(ratio).forEach(function (color) { ratio[color] += Number(sourceRatio[color] || 0); });
     });
     if (count) Object.keys(ratio).forEach(function (color) { ratio[color] = Math.round(ratio[color] / count); });
-    var values = [["blue", "藍"], ["green", "綠"], ["yellow", "黃"], ["orange", "橘"], ["red", "紅"]];
-    return '<div class="ratioBlock"><h3>' + esc(title || "燈號占比 24h") + '</h3><div class="donutRow"><div class="donut" style="background:' + donutGradient(values.map(function (item) { return ratio[item[0]]; })) + '"></div><div class="legend">' + values.map(function (item) { return '<div class="legendItem">' + dot(item[0]) + item[1] + ' ' + ratio[item[0]] + '%</div>'; }).join("") + '</div></div></div>';
+    var values = [["green", l("\u6700\u4f73", "Best")], ["yellow", l("\u6ce8\u610f", "Caution")], ["red", l("\u5371\u96aa", "Danger")]];
+    var riskLight = sourceLights.indexOf("red") >= 0 ? "red" : sourceLights.indexOf("yellow") >= 0 ? "yellow" : "";
+    var headingText = title === "" ? "" : (title || "\u71c8\u865f\u5360\u6bd4 " + (config().ratioWindow || "24h"));
+    var heading = headingText ? '<h3>' + esc(headingText) + '</h3>' : "";
+    return '<div class="ratioBlock' + (riskLight ? ' alertGlow ' + riskLight : '') + '">' + heading + '<div class="donutRow"><div class="donut" style="background:' + donutGradient(values.map(function (item) { return ratio[item[0]]; })) + '"></div><div class="legend">' + values.map(function (item) { return '<div class="legendItem">' + dot(item[0]) + item[1] + ' ' + ratio[item[0]] + '%</div>'; }).join("") + '</div></div></div>';
+  }
+  function effectiveParamLight(id, param) {
+    var p = param || runtimeParameter(id);
+    var scoreLight = lightForScore(p && p.score, "");
+    return scoreLight || p && p.light || "";
+  }
+  function ratioFromTrendSeries(id, windowKey) {
+    var series = trendSeriesFor(id);
+    var scores = series && Array.isArray(series.actual) ? series.actual : [];
+    if (series && Array.isArray(series.actualPoints) && series.actualPoints.length) {
+      var hours = windowKey === "30d" ? 720 : windowKey === "7d" ? 168 : 24;
+      var now = Date.now();
+      var filtered = series.actualPoints.filter(function (point) {
+        var time = new Date(point.time || point.timestamp || point.at || point.x).getTime();
+        return Number.isFinite(time) && now - time <= hours * 60 * 60 * 1000;
+      }).map(function (point) { return point.score != null ? point.score : point.y != null ? point.y : point.value; });
+      if (filtered.length) scores = filtered;
+    }
+    var counts = { green: 0, yellow: 0, red: 0 };
+    scores.forEach(function (score) {
+      var light = lightForScore(score, "");
+      if (light && counts[light] != null) counts[light] += 1;
+    });
+    var total = counts.green + counts.yellow + counts.red;
+    if (!total) return null;
+    return {
+      green: Math.round(counts.green / total * 100),
+      yellow: Math.round(counts.yellow / total * 100),
+      red: Math.max(0, 100 - Math.round(counts.green / total * 100) - Math.round(counts.yellow / total * 100))
+    };
+  }
+  function latestTrendLight(id) {
+    var series = trendSeriesFor(id);
+    var scores = series && Array.isArray(series.actual) ? series.actual : [];
+    return scores.length ? lightForScore(scores[scores.length - 1], "") : "";
   }
   function renderDeductionRatio() {
     var params = runtime().parameters || {};
@@ -1245,7 +1626,7 @@
       return {
         label: meta.shortLabel || meta.label || meta.id,
         value: deduction,
-        color: ["var(--red)", "var(--yellow)", "var(--cyan)", "var(--green)", "var(--orange)", "#b9c7d3"][item.index % 6]
+        color: ["var(--red)", "var(--yellow)", "var(--green)", "#b9c7d3"][item.index % 6]
       };
     }).filter(Boolean);
     if (!items.length && runtime().rootCause) {
@@ -1272,8 +1653,9 @@
     return rows.sort(function (a, b) { return a.index - b.index; }).map(function (row) { return row.base; });
   }
   function donutGradient(values, customColors) {
-    var colors = customColors || ["var(--blue)", "var(--green)", "var(--yellow)", "var(--orange)", "var(--red)"];
-    var total = values.reduce(function (sum, value) { return sum + value; }, 0) || 1;
+    var colors = customColors || ["var(--green)", "var(--yellow)", "var(--red)"];
+    var total = values.reduce(function (sum, value) { return sum + Number(value || 0); }, 0);
+    if (!total) return "#0b2134";
     var at = 0;
     return "conic-gradient(" + values.map(function (value, index) {
       var start = at;
@@ -1322,6 +1704,10 @@
     document.querySelectorAll("[data-mobile-page]").forEach(function (button) {
       button.onclick = function (event) {
         event.preventDefault();
+        if (button.dataset.routeUrl && root.location) {
+          root.location.href = button.dataset.routeUrl;
+          return;
+        }
         if (Settings.syncConfigFromServer) Settings.syncConfigFromServer().then(function () { mount(lastRoot, button.dataset.mobilePage || "overview"); });
         else mount(lastRoot, button.dataset.mobilePage || "overview");
       };
@@ -1329,7 +1715,17 @@
     document.querySelectorAll("[data-desktop-page]").forEach(function (button) {
       button.onclick = function (event) {
         event.preventDefault();
+        if (button.dataset.routeUrl && root.location) {
+          root.location.href = button.dataset.routeUrl;
+          return;
+        }
         setDesktopPage(button.dataset.desktopPage || "overview");
+      };
+    });
+    document.querySelectorAll("[data-hydro-index]").forEach(function (button) {
+      button.onclick = function () {
+        if (root.history && root.location) root.history.replaceState(null, "", "#index=" + encodeURIComponent(button.dataset.hydroIndex || "RHI"));
+        mount(lastRoot, "detail");
       };
     });
     var mobileParamSelect = el("mobileParamSelect");
@@ -1346,6 +1742,12 @@
     document.querySelectorAll("[data-ratio-param]").forEach(function (button) {
       button.onclick = function () {
         Settings.saveConfig({ selectedParameterId: button.dataset.ratioParam });
+        mount(lastRoot, lastPage);
+      };
+    });
+    document.querySelectorAll("[data-ratio-window]").forEach(function (button) {
+      button.onclick = function () {
+        Settings.saveConfig({ ratioWindow: button.dataset.ratioWindow || "24h" });
         mount(lastRoot, lastPage);
       };
     });
@@ -1402,15 +1804,34 @@
     var series = trendSeriesFor(id);
     if (!hasImport() || !series || !Array.isArray(series.actual) || !series.actual.length) { ctx.fillText("尚未匯入有效資料", m.l + 12, m.t + ph / 2); return; }
     var param = (runtime().parameters || {})[id] || {};
-    var score = id === "WQI" ? runtime().wqi : param.score;
-    var actualColor = (id === "DO" && Number(score) < 60) || param.light === "red" ? "#ff5d73" : "#35e67d";
+    var statusLight = id === "WQI" ? lightForScore(runtime().wqi, runtime().wqiLight) : effectiveParamLight(id, param);
+    var actualColor = statusLight === "red" ? "#ff5d73" : "#35e67d";
+    var timedActual = timedScorePoints(series.actualPoints, series.actual, "actual");
+    var timedForecast = timedScorePoints(series.forecastPoints, series.forecast, "forecast");
+    if (timedActual.length) {
+      if (timedForecast.length && Math.abs(Number(timedForecast[0].score) - Number(timedActual[timedActual.length - 1].score)) > .001) {
+        timedForecast = [{ timeMs: timedActual[timedActual.length - 1].timeMs, score: timedActual[timedActual.length - 1].score }].concat(timedForecast);
+      }
+      var timedStandard = timedScorePoints(series.standardPoints, series.standard, "standard");
+      var range = timeRangeForChart(timedActual, timedForecast);
+      timedActual = filterTimedPoints(timedActual, range);
+      timedForecast = filterTimedPoints(timedForecast, range);
+      timedStandard = filterTimedPoints(timedStandard, range);
+      drawSmoothTimedLine(ctx, timedStandard, range, m, pw, ph, "#35caff", [8, 6], 3);
+      drawColoredTimedLine(ctx, timedActual, range, m, pw, ph, [], 4);
+      drawSmoothTimedLine(ctx, timedForecast, range, m, pw, ph, "#ffd166", [4, 6], 4);
+      drawEndpointTimed(ctx, timedActual, range, m, pw, ph, scoreBandColor(timedActual[timedActual.length - 1] && timedActual[timedActual.length - 1].score));
+      drawEndpointTimed(ctx, timedForecast, range, m, pw, ph, "#ffd166");
+      drawTimeLabels(ctx, m, pw, h, range);
+      return;
+    }
     var actual = series.actual || [];
     var forecast = connectedForecast(actual, series.forecast || []);
     var nowRatio = actualEndRatio(actual, forecast);
     drawSmoothLine(ctx, series.standard || [], m, pw, ph, "#35caff", [8, 6], 3, 0, 1);
-    drawSmoothLine(ctx, actual, m, pw, ph, actualColor, [], 4, 0, nowRatio);
+    drawColoredLine(ctx, actual, m, pw, ph, [], 4, 0, nowRatio);
     drawSmoothLine(ctx, forecast, m, pw, ph, "#ffd166", [4, 6], 4, nowRatio, 1);
-    drawEndpoint(ctx, actual, m, pw, ph, actualColor, 0, nowRatio);
+    drawEndpoint(ctx, actual, m, pw, ph, scoreBandColor(actual[actual.length - 1]), 0, nowRatio);
     drawEndpoint(ctx, forecast, m, pw, ph, "#ffd166", nowRatio, 1);
     drawTimeLabels(ctx, m, pw, h);
   }
@@ -1468,14 +1889,184 @@
     ctx.stroke();
     ctx.restore();
   }
-  function drawTimeLabels(ctx, m, pw, h) {
+  function timedScorePoints(points, fallbackScores, role) {
+    if (Array.isArray(points) && points.length) {
+      return points.map(function (point, index) {
+        var time = Number(point.timeMs);
+        if (!Number.isFinite(time)) time = new Date(point.timestamp || point.time || point.at || point.x).getTime();
+        var score = point.score != null ? point.score : point.y != null ? point.y : point.value;
+        var missing = point.missing === true || point.isMissing === true || point.value == null && point.score == null && point.y == null;
+        return { timeMs: time, score: Number(score), index: index, missing: missing };
+      }).filter(function (point) { return Number.isFinite(point.timeMs) && Number.isFinite(point.score) && !point.missing; });
+    }
+    var scores = fallbackScores || [];
+    var now = Date.now();
+    return scores.map(function (score, index) {
+      var step = role === "forecast" ? 60 * 60 * 1000 : 10 * 60 * 1000;
+      var time = role === "forecast" ? now + index * step : now - (scores.length - 1 - index) * step;
+      return { timeMs: time, score: Number(score), index: index };
+    }).filter(function (point) { return Number.isFinite(point.score); });
+  }
+  function timeRangeForChart(actualPoints, forecastPoints) {
+    var actual = actualPoints || [];
+    var latestActual = actual.length ? actual[actual.length - 1].timeMs : NaN;
+    var center = Number.isFinite(latestActual) ? latestActual : Date.now();
+    var history = 12 * 60 * 60 * 1000;
+    return { min: center - history, max: center + history, center: center };
+  }
+  function filterTimedPoints(points, range) {
+    return (points || []).filter(function (point) { return point.timeMs >= range.min && point.timeMs <= range.max; });
+  }
+  function pointsForTimed(values, range, m, pw, ph) {
+    var span = Math.max(1, range.max - range.min);
+    return values.map(function (point) {
+      return {
+        x: m.l + pw * ((point.timeMs - range.min) / span),
+        y: m.t + ph * (1 - Math.max(0, Math.min(100, Number(point.score))) / 100)
+      };
+    });
+  }
+  function drawSmoothTimedLine(ctx, values, range, m, pw, ph, color, dash, width) {
+    if (!values.length) return;
+    var pts = pointsForTimed(values, range, m, pw, ph);
+    ctx.save(); ctx.strokeStyle = color; ctx.lineWidth = width || 3; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.setLineDash(dash || []); ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (var i = 1; i < pts.length - 1; i += 1) {
+      var midX = (pts[i].x + pts[i + 1].x) / 2;
+      var midY = (pts[i].y + pts[i + 1].y) / 2;
+      ctx.quadraticCurveTo(pts[i].x, pts[i].y, midX, midY);
+    }
+    if (pts.length > 1) ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+    ctx.stroke(); ctx.restore();
+  }
+  function scoreBandColor(score) {
+    var value = Number(score);
+    if (!Number.isFinite(value)) return "#35e67d";
+    if (value < 60) return "#ff5d73";
+    if (value < 80) return "#ffd166";
+    return "#35e67d";
+  }
+  function maxTrendGap(points) {
+    if (!points || points.length < 3) return 15 * 60 * 1000;
+    var gaps = [];
+    for (var i = 1; i < points.length; i += 1) {
+      var gap = Number(points[i].timeMs) - Number(points[i - 1].timeMs);
+      if (Number.isFinite(gap) && gap > 0) gaps.push(gap);
+    }
+    gaps.sort(function (a, b) { return a - b; });
+    var median = gaps[Math.floor(gaps.length / 2)] || 60 * 1000;
+    return Math.max(3 * 60 * 1000, median * 3.5);
+  }
+  function drawColoredTimedLine(ctx, values, range, m, pw, ph, dash, width) {
+    if (!values || !values.length) return;
+    if (values.length < 2) {
+      drawEndpointTimed(ctx, values, range, m, pw, ph, scoreBandColor(values[0] && values[0].score));
+      return;
+    }
+    var maxGap = maxTrendGap(values);
+    ctx.save();
+    ctx.lineWidth = width || 3;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.setLineDash(dash || []);
+    for (var i = 1; i < values.length; i += 1) {
+      if (values[i].timeMs - values[i - 1].timeMs > maxGap) continue;
+      var a = pointsForTimed([values[i - 1]], range, m, pw, ph)[0];
+      var b = pointsForTimed([values[i]], range, m, pw, ph)[0];
+      if (values[i].timeMs - values[i - 1].timeMs < 30 * 1000 && Math.abs(Number(values[i].score) - Number(values[i - 1].score)) > 20) continue;
+      drawColoredCanvasSegment(ctx, a.x, a.y, Number(values[i - 1].score), b.x, b.y, Number(values[i].score));
+    }
+    ctx.restore();
+  }
+  function drawColoredLine(ctx, values, m, pw, ph, dash, width, startRatio, endRatio) {
+    if (!values || !values.length) return;
+    if (values.length < 2) {
+      drawEndpoint(ctx, values, m, pw, ph, scoreBandColor(values[0]), startRatio, endRatio);
+      return;
+    }
+    var pts = pointsFor(values, m, pw, ph, startRatio, endRatio);
+    ctx.save();
+    ctx.lineWidth = width || 3;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.setLineDash(dash || []);
+    for (var i = 1; i < pts.length; i += 1) {
+      var aVal = Number(values[i - 1]);
+      var bVal = Number(values[i]);
+      if (!Number.isFinite(aVal) || !Number.isFinite(bVal)) continue;
+      drawColoredCanvasSegment(ctx, pts[i - 1].x, pts[i - 1].y, aVal, pts[i].x, pts[i].y, bVal);
+    }
+    ctx.restore();
+  }
+  function drawColoredCanvasSegment(ctx, x1, y1, s1, x2, y2, s2) {
+    if (!Number.isFinite(s1) || !Number.isFinite(s2)) return;
+    var cuts = [0, 1];
+    [60, 80].forEach(function (threshold) {
+      if ((s1 < threshold && s2 >= threshold) || (s1 >= threshold && s2 < threshold)) {
+        var t = (threshold - s1) / (s2 - s1);
+        if (t > 0 && t < 1) cuts.push(t);
+      }
+    });
+    cuts.sort(function (a, b) { return a - b; });
+    for (var i = 1; i < cuts.length; i += 1) {
+      var a = cuts[i - 1];
+      var b = cuts[i];
+      var mid = (a + b) / 2;
+      var score = s1 + (s2 - s1) * mid;
+      ctx.strokeStyle = scoreBandColor(score);
+      ctx.beginPath();
+      ctx.moveTo(x1 + (x2 - x1) * a, y1 + (y2 - y1) * a);
+      ctx.lineTo(x1 + (x2 - x1) * b, y1 + (y2 - y1) * b);
+      ctx.stroke();
+    }
+  }
+  function drawEndpointTimed(ctx, values, range, m, pw, ph, color) {
+    if (!values.length) return;
+    var pts = pointsForTimed(values, range, m, pw, ph);
+    var p = pts[pts.length - 1];
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.strokeStyle = "#dff8ff";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+  function drawTimeLabels(ctx, m, pw, h, range) {
     ctx.save();
     ctx.fillStyle = "#dff8ff";
     ctx.font = "12px Microsoft JhengHei, Arial";
-    [["00:00", 0], ["12:00", .5], ["24:00", 1]].forEach(function (item) {
-      ctx.fillText(item[0], m.l + pw * item[1] - (item[1] === 1 ? 30 : 0), h - 10);
+    var labels = range ? [
+      [formatChartTime(range.min), 0],
+      [formatChartTime((range.min + range.center) / 2), .25],
+      [formatChartTime(range.center), .5],
+      [formatChartTime((range.center + range.max) / 2), .75],
+      [formatChartTime(range.max), 1]
+    ] : [["00:00", 0], ["06:00", .25], ["12:00", .5], ["18:00", .75], ["24:00", 1]];
+    if (range && Number.isFinite(range.center)) {
+      var centerRatio = (range.center - range.min) / Math.max(1, range.max - range.min);
+      var centerX = m.l + pw * Math.max(0, Math.min(1, centerRatio));
+      ctx.save();
+      ctx.strokeStyle = "rgba(223, 248, 255, .32)";
+      ctx.setLineDash([3, 5]);
+      line(ctx, centerX, m.t, centerX, h - m.b);
+      ctx.restore();
+    }
+    labels.forEach(function (item) {
+      var width = ctx.measureText(item[0]).width;
+      var x = m.l + pw * item[1] - width / 2;
+      ctx.fillText(item[0], Math.max(m.l, Math.min(m.l + pw - width, x)), h - 10);
     });
     ctx.restore();
+  }
+  function formatChartTime(timeMs) {
+    var date = new Date(timeMs);
+    if (!Number.isFinite(date.getTime())) return "--:--";
+    var hh = String(date.getHours()).padStart(2, "0");
+    var mm = String(date.getMinutes()).padStart(2, "0");
+    return hh + ":" + mm;
   }
   function l(zh, en) {
     return isEn() ? en : zh;
@@ -1540,7 +2131,7 @@
     return l("專家系統 | ", "Expert System | ") + templateLabel(tpl) + " - " + cleanPageTitle(page);
   }
   function templateRoutes(tpl) {
-    if (tpl && Array.isArray(tpl.routes) && tpl.routes.length) return tpl.routes;
+    if (tpl && Array.isArray(tpl.routes) && tpl.routes.length) return tpl.routes.filter(function (route) { return route.id !== "settings"; });
     return [
       { id: "overview", label: "總覽", labelEn: "Overview" },
       { id: "parameter", label: "參數三線", labelEn: "Parameter Trends" },
@@ -1560,14 +2151,14 @@
     var templatePageRoutes = templateRoutes(tpl);
     var routes = [{ id: "settings", label: l("回設定", "Settings"), labelEn: "Settings" }].concat(templatePageRoutes);
     return '<nav class="navBar routeNav">' + routes.map(function (route) {
-      return '<button class="navButton ' + (page === route.id ? "active" : "") + '" type="button" data-desktop-page="' + esc(route.id) + '">' + esc(routeLabel(route)) + '</button>';
+      return '<button class="navButton ' + (page === route.id ? "active" : "") + '" type="button" data-desktop-page="' + esc(route.id) + '"' + (route.url ? ' data-route-url="' + esc(route.url) + '"' : "") + '>' + esc(routeLabel(route)) + '</button>';
     }).join("") + '</nav>';
   }
   function mobileTabs(page, tpl) {
     if (page === "settings" || !tpl) return "";
     var tabs = [{ id: "settings", label: l("設定", "Settings"), labelEn: "Settings" }].concat(templateRoutes(tpl));
     return '<nav class="mobileTabs">' + tabs.map(function (tab, index) {
-      return '<button class="mobileTab ' + (page === tab.id ? "active" : "") + '" data-mobile-page="' + esc(tab.id) + '"><strong>' + String(index + 1).padStart(2, "0") + '</strong><span>' + esc(routeLabel(tab)) + '</span></button>';
+      return '<button class="mobileTab ' + (page === tab.id ? "active" : "") + '" data-mobile-page="' + esc(tab.id) + '"' + (tab.url ? ' data-route-url="' + esc(tab.url) + '"' : "") + '><strong>' + String(index + 1).padStart(2, "0") + '</strong><span>' + esc(routeLabel(tab)) + '</span></button>';
     }).join("") + '</nav>';
   }
   function languageSwitch() {
@@ -1601,6 +2192,19 @@
     var rows = sensorRequirements(cfg);
     if (!rows.length) return "";
     var params = runtime().parameters || {};
+    function isFreshTimestamp(value) {
+      if (!value) return true;
+      var time = new Date(value).getTime();
+      if (!Number.isFinite(time)) return true;
+      var maxAgeMs = 60 * 60 * 1000;
+      return Date.now() - time <= maxAgeMs;
+    }
+    function shortTimestamp(value) {
+      if (!value) return "";
+      var date = new Date(value);
+      if (!Number.isFinite(date.getTime())) return "";
+      return date.toLocaleString(isEn() ? "en-US" : "zh-TW", { hour12: false, month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+    }
     function weatherParam(id) {
       var weather = runtime().weatherContext || {};
       var micro = weather.microWeather || {};
@@ -1637,39 +2241,210 @@
       var runtimeParam = runtimeForSensor(sensor);
       var meta = parameterMeta(sensor.parameterId);
       var hasValue = runtimeParam.value != null && runtimeParam.value !== "";
+      var isFresh = hasValue ? isFreshTimestamp(runtimeParam.timestamp || runtimeParam.receivedAt || runtime().calculatedAt) : false;
       var installed = hasValue || !(runtimeParam.sensorInstalled === false || runtimeParam.isInstalled === false || sensor.sensorInstalled === false);
       var required = sensor.requirement === "required";
       var statusText = !installed && required
-        ? l("必配未安裝", "Required sensor not installed")
+        ? l("\u5fc5\u8981\u611f\u6e2c\u5668\u672a\u5b89\u88dd", "Required sensor not installed")
         : !installed
-          ? l("未安裝", "Not installed")
-          : hasValue
-            ? l("已安裝有資料", "Installed with live data")
-            : l("已安裝等待資料", "Installed, waiting for data");
-      var statusColor = !installed ? "none" : hasValue ? "green" : "red";
+          ? l("\u672a\u5b89\u88dd", "Not installed")
+          : hasValue && isFresh
+            ? l("\u5df2\u63a5\u5165\u6709\u8cc7\u6599", "Installed with live data")
+            : hasValue
+              ? l("\u8cc7\u6599\u904e\u671f", "Data stale")
+            : l("\u5df2\u5b89\u88dd\uff0c\u7b49\u5f85\u8cc7\u6599", "Installed, waiting for data");
+      var statusColor = !installed ? "none" : hasValue && isFresh ? "green" : hasValue ? "yellow" : "red";
       var title = isEn() && sensor.labelEn ? sensor.labelEn : sensor.label || paramLabel(runtimeParam, meta, sensor.parameterId);
-      var requirementLabel = required ? l("必配", "Required") : l("選配", "Optional");
+      var requirementLabel = required ? l("\u5fc5\u914d", "Required") : l("\u9078\u914d", "Optional");
       var productName = isEn() && sensor.productNameEn ? sensor.productNameEn : sensor.productName || title;
       var desc = isEn() && sensor.descriptionEn ? sensor.descriptionEn : sensor.description || "";
       var unit = sensor.unit || runtimeParam.unit || meta.unit || "";
-      var image = sensor.productImageUrl
-        ? '<img src="' + esc(sensor.productImageUrl) + '" alt="' + esc(productName) + '">'
-        : '<div class="sensorPhotoPlaceholder"><span>' + esc(l("產品照片待補", "Product photo pending")) + '</span></div>';
-      return '<article class="sensorRequirementCard ' + (!installed ? "notInstalled" : "") + ' ' + (required ? "required" : "optional") + '">' +
+      var sensorImageUrl = resolveAssetUrl(sensor.productImageUrl || "");
+      var image = sensorImageUrl
+        ? '<img src="' + esc(sensorImageUrl) + '" alt="' + esc(productName) + '">'
+        : '<div class="sensorPhotoPlaceholder"><span>' + esc(l("\u7522\u54c1\u5716\u7247\u5f85\u88dc", "Product photo pending")) + '</span></div>';
+      var card = '<article class="sensorRequirementCard ' + (!installed ? "notInstalled" : "") + ' ' + (required ? "required" : "optional") + '">' +
         '<div class="sensorPhoto">' + image + '</div>' +
         '<div class="sensorInfo"><div class="sensorTitleRow"><h4>' + esc(title) + '</h4><span class="requirementPill ' + (required ? "required" : "optional") + '">' + esc(requirementLabel) + '</span></div>' +
-        '<p class="muted">' + esc(sensor.parameterId) + (unit ? ' · ' + esc(unit) : '') + '</p>' +
-        '<p>' + esc(l("產品", "Product")) + ': ' + esc(productName) + '</p>' +
+        '<p class="muted">' + esc(sensor.parameterId) + (unit ? ' / ' + esc(unit) : '') + '</p>' +
+        '<p>' + esc(l("\u7522\u54c1", "Product")) + ': ' + esc(productName) + '</p>' +
         (desc ? '<p class="muted">' + esc(desc) + '</p>' : '') + '</div>' +
         '<div class="sensorRuntime"><span class="statusPill ' + esc(statusColor) + '">' + dot(statusColor) + esc(statusText) + '</span>' +
         '<strong>' + esc(hasValue ? runtimeParam.value : "--") + '</strong>' +
-        '<small>' + esc(hasValue ? l("即時資料", "Live Data") : l("等待資料", "Waiting for data")) + '</small></div>' +
+        '<small>' + esc(hasValue && isFresh ? l("\u5373\u6642\u8cc7\u6599", "Live Data") : hasValue ? l("\u6700\u5f8c\u8cc7\u6599", "Last Data") + (shortTimestamp(runtimeParam.timestamp || runtimeParam.receivedAt) ? " " + shortTimestamp(runtimeParam.timestamp || runtimeParam.receivedAt) : "") : l("\u7b49\u5f85\u8cc7\u6599", "Waiting for data")) + '</small></div>' +
       '</article>';
+      return card;
     }).join("");
-    return '<section class="sensorRequirementPanel"><div class="sectionTitle"><h3>' + esc(l("感測器設備需求", "Sensor Requirements")) + '</h3></div><div class="sensorRequirementGrid">' + cards + '</div></section>';
+    if (isMobile()) return '<div class="sensorRequirementGrid">' + cards + '</div>';
+    return '<section class="sensorRequirementPanel"><div class="sectionTitle"><h3>' + esc(l("\u611f\u6e2c\u5668\u8a2d\u5099\u9700\u6c42", "Sensor Requirements")) + '</h3></div><div class="sensorRequirementGrid">' + cards + '</div></section>';
   }
   function isConceptTemplate(tpl) {
     return Boolean(tpl && (tpl.conceptUiUrl || tpl.conceptUiUrlDesktop || tpl.conceptUiUrlMobile));
+  }
+  function isHydroponicTemplate(tpl) {
+    return Boolean(tpl && (tpl.commonNameEn === "Hydroponic vegetables" || tpl.labelEn === "Hydroponic Vegetables"));
+  }
+  function hydroRuntime() {
+    return runtime() || {};
+  }
+  function hydroIndices() {
+    return hydroRuntime().indices || {};
+  }
+  function hydroDataQuality() {
+    return hydroRuntime().dataQuality || {};
+  }
+  function hydroIndexLabel(id) {
+    var labels = {
+      RHI: l("根域健康", "Root-zone Health"),
+      PMI: l("光合微氣候", "Photosynthetic Microclimate"),
+      DLI_CR: l("每日光量完成率", "Daily Light Completion"),
+      LGI: l("生長落後", "Growth Lag")
+    };
+    return labels[id] || id;
+  }
+  function hydroStatusLabel(item) {
+    if (!item || item.score == null) return l("資料不足", "Insufficient Data");
+    if (item.light === "red") return l("需處置", "Action Needed");
+    if (item.light === "yellow") return l("注意", "Attention");
+    return l("正常", "Normal");
+  }
+  function hydroLightClass(item) {
+    return item && item.light === "red" ? "red" : item && item.light === "yellow" ? "yellow" : "green";
+  }
+  function hydroText(item, zhKey, enKey) {
+    if (!item) return "";
+    return isEn() ? (item[enKey] || item[zhKey] || "") : (item[zhKey] || item[enKey] || "");
+  }
+  function hydroConfigValue(key, fallback) {
+    var cfg = config();
+    return cfg[key] || fallback || "";
+  }
+  function renderHydroCultivationProgress(inputCfg) {
+    var cfg = inputCfg || config();
+    var metrics = cultureMetrics(cfg);
+    var pct = Number(metrics.cultureProgressPct || 0);
+    var dayLabel = metrics.daysAfterStocking == null
+      ? l("未設定", "Not set")
+      : metrics.daysToHarvest < 0
+        ? l("已超過預計收成日", "Past planned harvest") + " " + Math.abs(metrics.daysToHarvest) + " " + l("天", "days")
+        : l("第", "Day") + " " + metrics.daysAfterStocking + " " + l("天", "");
+    var endLabel = metrics.plannedCultureDays ? l("第", "Day") + " " + metrics.plannedCultureDays + " " + l("天", "") : l("收成", "Harvest");
+    var midLabel = metrics.plannedCultureDays ? l("第", "Day") + " " + Math.ceil(Number(metrics.plannedCultureDays) / 2) + " " + l("天", "") : "--";
+    return '<div><p>' + esc(l("栽培天數", "Cultivation day")) + ': ' + esc(dayLabel) + '</p><div class="progressTrack"><div class="progressBar" style="width:' + pct + '%"></div></div><div class="progressLabels"><span>0</span><span>' + esc(midLabel) + '</span><span>' + esc(endLabel) + '</span></div></div>';
+  }
+  function renderHydroSiteSummary() {
+    var cfg = config();
+    var crop = hydroConfigValue("targetSpec", l("未設定作物", "Crop not set"));
+    var variety = hydroConfigValue("breed", l("未設定品種", "Variety not set"));
+    var transplant = hydroConfigValue("stockingDate", "");
+    var harvest = hydroConfigValue("plannedHarvestDate", "");
+    var progress = renderHydroCultivationProgress();
+    return '<section class="panel nestedClean"><div class="panelHeader"><h2>' + esc(l("場域與栽培進度", "Site And Crop Progress")) + '</h2><span class="badge">' + esc(config().pondId || l("未設定床層", "No bed selected")) + '</span></div><div class="panelBody stack"><div class="confirmGrid"><p><span>' + esc(l("作物", "Crop")) + '</span><strong>' + esc(crop) + '</strong></p><p><span>' + esc(l("品種", "Variety")) + '</span><strong>' + esc(variety) + '</strong></p><p><span>' + esc(l("定植日", "Transplant date")) + '</span><strong>' + esc(transplant || "--") + '</strong></p><p><span>' + esc(l("預計收成日", "Planned harvest")) + '</span><strong>' + esc(harvest || "--") + '</strong></p></div>' + progress + '</div></section>';
+  }
+  function renderHydroAlertPanel() {
+    var alerts = hydroRuntime().alerts || [];
+    var body = alerts.length ? alerts.slice(0, 5).map(function (alert) {
+      var light = alert.severity === "critical" ? "red" : alert.severity === "warning" ? "yellow" : "green";
+      return '<article class="decisionItem"><span class="statusPill ' + esc(light) + '">' + dot(light) + esc(alert.severity || l("提示", "Info")) + '</span><strong>' + esc(hydroText(alert, "title", "titleEn")) + '</strong><p>' + esc(hydroText(alert, "message", "messageEn")) + '</p><p class="muted">' + esc(l("處置層級", "Handling tier")) + ': ' + esc(hydroText(alert, "handlingTier", "handlingTierEn") || "--") + '</p></article>';
+    }).join("") : '<div class="emptyState"><h3>' + esc(l("目前沒有警報", "No active alerts")) + '</h3></div>';
+    return '<article class="panel"><div class="panelHeader"><h2>' + esc(l("警報紀錄", "Alerts")) + '</h2><span class="badge">' + esc(alerts.length) + '</span></div><div class="panelBody stack">' + body + '</div></article>';
+  }
+  function renderHydroVisionGrowthPanel() {
+    var data = hydroRuntime();
+    var params = data.parameters || {};
+    var lgi = (data.indices || {}).LGI || {};
+    var visionReady = params.canopyGrowthPct || data.vision || data.underwaterVision;
+    var summary = visionReady
+      ? l("影像資料已接入，LGI 會納入生長證據。", "Vision data is connected and can support LGI evidence.")
+      : l("等待影像資料；目前 LGI 不因影像缺失直接扣分。", "Waiting for vision data; LGI is not directly penalized for missing images.");
+    return '<section class="panel nestedClean"><div class="panelHeader"><h2>' + esc(l("影像與生長摘要", "Vision And Growth Summary")) + '</h2><span class="scoreCapsule">' + esc("LGI " + (lgi.score != null ? lgi.score : "--")) + '</span></div><div class="panelBody stack"><p>' + esc(summary) + '</p><div class="parameterTileGrid"><article class="parameterTile"><span>' + esc(l("葉色 / 葉片健康", "Leaf color / health")) + '</span><strong>' + esc(l("等待資料", "Waiting")) + '</strong><p>' + esc(l("影像模型接入後顯示摘要，不顯示模型權重。", "Shows image summary after model input; model weights stay hidden.")) + '</p></article><article class="parameterTile"><span>' + esc(l("收成預測", "Harvest forecast")) + '</span><strong>' + esc(hydroConfigValue("plannedHarvestDate", "--")) + '</strong><p>' + esc(l("依定植日、收成日與生長資料更新。", "Updated from transplant, harvest date, and growth inputs.")) + '</p></article></div></div></section>';
+  }
+  function renderHydroTrendPanel() {
+    var params = hydroRuntime().parameters || {};
+    var ids = ["EC", "pH", "DO", "waterTempC", "airTempC", "humidityPct", "DLI"];
+    var trendShapes = {
+      EC: { history: "0,64 20,56 40,53 62,55 82,50 100,58", forecast: "100,58 120,54 140,52 162,55 184,62 200,72" },
+      pH: { history: "0,68 18,61 38,57 58,55 78,57 100,58", forecast: "100,58 120,57 140,54 160,53 182,58 200,66" },
+      DO: { history: "0,70 18,62 36,58 56,56 78,57 100,58", forecast: "100,58 118,54 138,51 160,52 182,57 200,67" },
+      waterTempC: { history: "0,67 20,59 42,55 64,54 84,56 100,58", forecast: "100,58 120,55 142,53 164,54 184,60 200,70" },
+      airTempC: { history: "0,66 18,57 38,51 58,50 78,54 100,58", forecast: "100,58 120,62 140,64 160,61 180,58 200,60" },
+      humidityPct: { history: "0,58 18,61 38,66 58,64 78,60 100,58", forecast: "100,58 120,56 140,58 160,63 182,67 200,64" },
+      DLI: { history: "0,76 20,70 42,62 64,56 84,55 100,58", forecast: "100,58 120,53 140,48 162,47 184,52 200,60" }
+    };
+    var rows = ids.map(function (id) {
+      var p = params[id] || {};
+      var meta = parameterMeta(id);
+      var hasValue = p.value != null;
+      var valueText = hasValue ? String(p.value) + (p.unit || meta.unit ? " " + (p.unit || meta.unit) : "") : l("等待資料", "Waiting for data");
+      var shape = trendShapes[id] || trendShapes.EC;
+      return '<article class="hydroTrendCard"><div class="trendHeader"><div><strong>' + esc(paramLabel(p, meta, id)) + '</strong><span>' + esc(valueText) + '</span></div><span class="badge">' + esc(l("24 小時", "24 hours")) + '</span></div><div class="trendSkeleton hydroTrend24" aria-hidden="true"><svg class="hydroTrendSvg" viewBox="0 0 200 100" preserveAspectRatio="none"><line class="svgIdealLine" x1="0" y1="28" x2="200" y2="28"></line><polyline class="svgHistoryLine" points="' + esc(shape.history) + '"></polyline><polyline class="svgForecastLine" points="' + esc(shape.forecast) + '"></polyline><circle class="svgNowPoint" cx="100" cy="58" r="5"></circle></svg><i class="trendNowAxis"></i><span class="trendAxisLabel left">-12h</span><span class="trendAxisLabel now">' + esc(l("現在", "Now")) + '</span><span class="trendAxisLabel right">+12h</span></div><div class="trendLegend"><span class="ideal">' + esc(l("理想線", "Ideal line")) + '</span><span class="actual">' + esc(l("歷史曲線", "History curve")) + '</span><span class="forecast">' + esc(l("預測曲線", "Forecast curve")) + '</span></div></article>';
+    }).join("");
+    return '<section class="panel nestedClean"><div class="panelHeader"><h2>' + esc(l("參數三線與趨勢", "Parameter Trends")) + '</h2></div><div class="panelBody"><div class="hydroTrendGrid">' + rows + '</div></div></section>';
+  }
+  function renderHydroLeafTempPanel() {
+    var enabled = hydroConfigValue("leafTempTask", "") === "enabled";
+    var status = enabled ? l("待量測", "Pending measurement") : l("任務未啟用", "Task disabled");
+    return '<section class="panel nestedClean"><div class="panelHeader"><h2>' + esc(l("葉面溫度量測任務", "Leaf Temperature Task")) + '</h2><span class="badge">' + esc(status) + '</span></div><div class="panelBody"><div class="parameterTileGrid"><article class="parameterTile"><span>11:00</span><strong>--</strong><p>' + esc(enabled ? l("等待手持量測", "Waiting for handheld measurement") : l("設定頁可啟用此任務", "Enable this task in settings")) + '</p></article><article class="parameterTile"><span>14:00</span><strong>--</strong><p>' + esc(enabled ? l("等待手持量測", "Waiting for handheld measurement") : l("設定頁可啟用此任務", "Enable this task in settings")) + '</p></article></div></div></section>';
+  }
+  function renderHydroThresholdPanel() {
+    var standards = Array.isArray(config().customStandards) ? config().customStandards : [];
+    var rows = standards.length ? standards.map(function (row) {
+      return '<article class="decisionItem"><strong>' + esc(row.parameterId || "--") + '</strong><p>' + esc(l("來源", "Source")) + ': ' + esc(row.source || l("客戶自訂", "Client custom")) + '</p><p class="muted">' + esc(l("審核狀態", "Review status")) + ': ' + esc(row.reviewStatus || l("待審核", "Pending review")) + ' / ' + esc(l("生效日", "Effective date")) + ': ' + esc(row.effectiveDate || "--") + '</p></article>';
+    }).join("") : '<div class="emptyState"><h3>' + esc(l("目前依系統建議判定", "Using system recommendation")) + '</h3><p>' + esc(l("模板預設數值不在客戶頁顯示。", "Template default values are not shown on client pages.")) + '</p></div>';
+    return '<article class="panel"><div class="panelHeader"><h2>' + esc(l("門檻來源", "Standard Source")) + '</h2></div><div class="panelBody stack">' + rows + '</div></article>';
+  }
+  function renderHydroInterlockPanel() {
+    var quality = hydroDataQuality();
+    var missing = quality.missingRequired || [];
+    var blocked = missing.length > 0;
+    var reasons = blocked ? missing.map(function (id) { return id + " " + l("資料不足", "data missing"); }) : [l("目前沒有安全互鎖阻擋", "No safety interlock is currently blocking actions")];
+    return '<article class="panel"><div class="panelHeader"><h2>' + esc(l("安全互鎖 / 被阻擋動作", "Safety Interlocks")) + '</h2><span class="statusPill ' + (blocked ? "yellow" : "green") + '">' + dot(blocked ? "yellow" : "green") + esc(blocked ? l("需人工確認", "Needs review") : l("可評估", "Clear")) + '</span></div><div class="panelBody stack">' + reasons.map(function (reason) { return '<div class="decisionItem"><strong>' + esc(reason) + '</strong><p class="muted">' + esc(blocked ? l("高信心控制暫停，先補齊必配資料。", "High-confidence control is paused until required data is complete.") : l("控制請求仍需依現場權限確認。", "Control requests still require site authorization.")) + '</p></div>'; }).join("") + '</div></article>';
+  }
+  function renderHydroIndexCard(id, item, active) {
+    return '<button class="hydroIndexCard ' + (active ? "active" : "") + '" type="button" data-hydro-index="' + esc(id) + '">' +
+      '<div class="metricTop"><span>' + esc(id) + '</span><span class="statusPill ' + esc(hydroLightClass(item)) + '">' + dot(hydroLightClass(item)) + esc(hydroStatusLabel(item)) + '</span></div>' +
+      '<strong>' + esc(item && item.score != null ? item.score : "--") + '</strong>' +
+      '<p>' + esc(hydroIndexLabel(id)) + '</p>' +
+      '<small>' + esc(hydroText(item, "mainCauseText", "mainCauseTextEn") || l("等待資料", "Waiting for data")) + '</small>' +
+    '</button>';
+  }
+  function renderHydroOverviewPage() {
+    var data = hydroRuntime();
+    var indices = hydroIndices();
+    var quality = hydroDataQuality();
+    var params = data.parameters || {};
+    var decisions = data.decisions || [];
+    var alerts = data.alerts || [];
+    var indexHtml = ["RHI", "PMI", "DLI_CR", "LGI"].map(function (id) {
+      return renderHydroIndexCard(id, indices[id], false);
+    }).join("");
+    var paramOrder = ["EC", "pH", "DO", "waterTempC", "airTempC", "humidityPct", "DLI", "CO2"];
+    var paramHtml = paramOrder.filter(function (id) { return params[id]; }).map(function (id) {
+      var p = params[id] || {};
+      var meta = parameterMeta(id);
+      return '<article class="parameterTile"><span>' + esc(paramLabel(p, meta, id)) + '</span><strong>' + esc(p.value != null ? p.value : "--") + ' <small>' + esc(p.unit || meta.unit || "") + '</small></strong><p>' + esc(statusLabel(p, l("已接入", "Connected"))) + '</p></article>';
+    }).join("") || '<div class="emptyState"><h3>' + esc(l("等待水耕感測資料", "Waiting for hydroponic sensor data")) + '</h3></div>';
+    var decisionHtml = decisions.length ? decisions.slice(0, 3).map(function (d) {
+      return '<article class="decisionItem"><strong>' + esc(hydroText(d, "title", "titleEn") || hydroText(d, "recommendedAction", "recommendedActionEn")) + '</strong><p>' + esc(hydroText(d, "triggerReason", "triggerReasonEn")) + '</p></article>';
+    }).join("") : '<div class="emptyState"><h3>' + esc(l("目前無需處置", "No action needed")) + '</h3></div>';
+    return wrap('<section class="' + cardClass() + '"><div class="' + headClass() + '"><div><h2>' + esc(l("水耕蔬菜總覽", "Hydroponic Overview")) + '</h2><p class="muted">' + esc(config().pondId || l("未設定床層", "No bed selected")) + '</p></div><span class="statusPill yellow">' + dot("yellow") + esc(l("模板預覽版", "Template Preview")) + '</span></div><div class="' + bodyClass() + ' stack"><div class="mobileMetricGrid">' + indexHtml + '</div><div class="desktopOverview"><div class="desktopColumn">' + renderHydroSiteSummary() + renderHydroTrendPanel() + '</div><div class="desktopColumn desktopMain"><section class="panel nestedClean"><div class="panelHeader"><h2>' + esc(l("即時參數", "Live Parameters")) + '</h2></div><div class="panelBody"><div class="parameterTileGrid">' + paramHtml + '</div></div></section>' + renderHydroVisionGrowthPanel() + renderHydroLeafTempPanel() + '</div><aside class="desktopAside"><article class="panel"><div class="panelHeader"><h2>' + esc(l("目前建議", "Current Guidance")) + '</h2><span class="badge">' + esc(decisions.length) + '</span></div><div class="panelBody stack">' + decisionHtml + '</div></article>' + renderHydroAlertPanel() + '<article class="panel"><div class="panelHeader"><h2>' + esc(l("資料完整度", "Data Completeness")) + '</h2><span class="badge">' + esc(Math.round((quality.confidence || 0) * 100)) + '%</span></div><div class="panelBody"><p class="muted">' + esc(l("必配缺失", "Missing required")) + ': ' + esc((isEn() ? quality.missingRequiredLabelsEn : quality.missingRequiredLabels || quality.missingRequired || []).join(", ") || l("無", "None")) + '</p><p class="muted">' + esc(l("警報", "Alerts")) + ': ' + esc(alerts.length) + '</p></div></article></aside></div></div></section>');
+  }
+  function renderHydroDetailPage() {
+    var selected = String(root.location.hash || "").replace(/^#index=/, "").toUpperCase() || "RHI";
+    if (selected === "DLI") selected = "DLI_CR";
+    if (["RHI", "PMI", "DLI_CR", "LGI"].indexOf(selected) < 0) selected = "RHI";
+    var indices = hydroIndices();
+    var item = indices[selected] || {};
+    var issues = Array.isArray(item.issues) && item.issues.length ? item.issues : [];
+    var issueHtml = issues.length ? issues.map(function (issue) {
+      return '<article class="issueRow"><div class="lossBadge">-' + esc(issue.loss || 0) + '</div><div><h3>' + esc(hydroText(issue, "title", "titleEn") || hydroText(issue, "ruleName", "ruleNameEn")) + '</h3><p>' + esc(hydroText(issue, "cause", "causeEn")) + '</p><p class="muted">' + esc(l("依據", "Basis")) + ': ' + esc(hydroText(issue, "ruleName", "ruleNameEn")) + '</p></div></article>';
+    }).join("") : '<div class="emptyState"><h3>' + esc(l("此指標目前沒有主要扣分", "No major deduction for this index")) + '</h3><p>' + esc(hydroText(item, "mainCauseText", "mainCauseTextEn") || l("等待資料", "Waiting for data")) + '</p></div>';
+    var indexTabs = ["RHI", "PMI", "DLI_CR", "LGI"].map(function (id) { return renderHydroIndexCard(id, indices[id], id === selected); }).join("");
+    var decisions = hydroRuntime().decisions || [];
+    var quality = hydroDataQuality();
+    var selectedRatioMap = {};
+    selectedRatioMap[selected] = item;
+    return wrap('<section class="' + cardClass() + '"><div class="' + headClass() + '"><div><h2>' + esc(l("扣分細節", "Deduction Details")) + '</h2><p class="muted">' + esc(l("點選指標查看造成扣分的環節", "Select an index to inspect deduction causes")) + '</p></div><span class="scoreCapsule">' + esc(selected) + ' ' + esc(item.score != null ? item.score : "--") + '</span></div><div class="' + bodyClass() + ' stack"><div class="mobileMetricGrid">' + indexTabs + '</div><div class="desktopParameter"><section class="panel desktopParameterMain"><div class="panelHeader"><div><h2>' + esc(selected + " " + hydroIndexLabel(selected)) + '</h2><p class="muted">' + esc(hydroText(item, "mainRiskText", "mainRiskTextEn")) + '</p></div><span class="statusPill ' + esc(hydroLightClass(item)) + '">' + dot(hydroLightClass(item)) + esc(hydroStatusLabel(item)) + '</span></div><div class="panelBody stack">' + issueHtml + '</div></section><aside class="desktopAside"><article class="panel"><div class="panelHeader"><h2>' + esc(l("燈號占比", "Light Ratio")) + '</h2><div class="ratioWindowSwitch">' + ratioWindowButtons(config()) + '</div></div><div class="panelBody">' + renderLightRatio(selectedRatioMap, "") + '</div></article>' + renderHydroInterlockPanel() + renderHydroThresholdPanel() + '<article class="panel"><div class="panelHeader"><h2>' + esc(l("建議處置", "Recommended Actions")) + '</h2></div><div class="panelBody stack">' + (decisions.length ? decisions.map(function (d) { return '<div class="decisionItem"><strong>' + esc(hydroText(d, "recommendedAction", "recommendedActionEn")) + '</strong><p>' + esc(hydroText(d, "triggerReason", "triggerReasonEn")) + '</p></div>'; }).join("") : '<p class="muted">' + esc(l("目前無需處置", "No action needed")) + '</p>') + '</div></article><article class="panel"><div class="panelHeader"><h2>' + esc(l("資料完整度", "Data Completeness")) + '</h2></div><div class="panelBody"><p class="muted">' + esc(Math.round((quality.confidence || 0) * 100)) + '%</p><p class="muted">' + esc((isEn() ? quality.missingRequiredLabelsEn : quality.missingRequiredLabels || quality.missingRequired || []).join(", ") || l("無缺失", "No missing required data")) + '</p></div></article></aside></div></div></section>');
   }
   function renderConceptUiFrame(tpl) {
     var url = tpl ? (isMobile() ? (tpl.conceptUiUrlMobile || tpl.conceptUiUrl) : (tpl.conceptUiUrlDesktop || tpl.conceptUiUrl)) : "";
@@ -1683,12 +2458,19 @@
     return page === "parameter" ? renderParameterPage() : page === "control" ? renderControlPage() : page === "decisions" ? renderDecisionsPage() : renderOverview();
   }
   function renderSelectedTemplatePage(page, tpl) {
+    if (isHydroponicTemplate(tpl)) return page === "detail" ? renderHydroDetailPage() : renderHydroOverviewPage();
     if (isConceptTemplate(tpl)) return renderConceptUiFrame(tpl);
     return renderWhiteShrimpTemplatePage(page);
   }
   function renderSetup() {
     var cfg = config();
-    var industries = Object.keys(Settings.TEMPLATE_CATALOG).map(function (id) {
+    var locked = cfg.templateLocked === true && Array.isArray(cfg.allowedTemplates) && cfg.allowedTemplates.length > 0;
+    var industries = Object.keys(Settings.TEMPLATE_CATALOG).filter(function (id) {
+      var templates = Settings.TEMPLATE_CATALOG[id].templates || {};
+      return Object.keys(templates).some(function (speciesId) {
+        return !Settings.isTemplateAllowed || Settings.isTemplateAllowed(cfg, id, speciesId);
+      });
+    }).map(function (id) {
       var item = Settings.TEMPLATE_CATALOG[id];
       return { id: id, label: item.label, labelEn: item.labelEn };
     });
@@ -1696,41 +2478,56 @@
     var species = selectedIndustry ? Object.keys(selectedIndustry.templates).map(function (id) {
       var item = selectedIndustry.templates[id];
       return { id: id, label: item.label, labelEn: item.labelEn, template: item };
+    }).filter(function (item) {
+      return !Settings.isTemplateAllowed || Settings.isTemplateAllowed(cfg, cfg.industry, item.id);
     }) : [];
     var tpl = template(cfg);
     var totalTemplates = industries.reduce(function (sum, item) {
       return sum + Object.keys((Settings.TEMPLATE_CATALOG[item.id].templates || {})).length;
     }, 0);
-    var industryHtml = industries.map(function (item) {
+    var industryHtml = locked ? '<div class="emptyState"><h3>' + esc(l("場域設定已完成", "Site profile is ready")) + '</h3><p>' + esc(l("此頁僅顯示目前場域適用的設定內容。", "This page shows the settings for the current site.")) + '</p></div>' : industries.map(function (item) {
       var count = Object.keys((Settings.TEMPLATE_CATALOG[item.id].templates || {})).length;
       return '<button type="button" class="setupChoice ' + (cfg.industry === item.id ? "active" : "") + '" data-industry-choice="' + esc(item.id) + '"><strong>' + esc(labelOf(item)) + '</strong><span>' + count + ' ' + esc(l("種生物", "species")) + '</span></button>';
     }).join("");
-    var templateHtml = species.length ? species.map(function (item) {
+    var templateHtml = locked && tpl ? '<div class="templateChoice active"><strong>' + esc(templateLabel(tpl)) + '</strong><span>' + esc(tpl.scientificName || tpl.commonName || "") + '</span></div>' : species.length ? species.map(function (item) {
       return '<button type="button" class="templateChoice ' + (cfg.species === item.id ? "active" : "") + '" data-template="' + esc(item.id) + '"><strong>' + esc(labelOf(item)) + '</strong><span>' + esc(item.template.scientificName || item.template.commonName || "") + '</span></button>';
     }).join("") : '<div class="emptyState"><h3>' + esc(l("未選定產業", "No industry selected")) + '</h3></div>';
     var templateFields = tpl ? renderTemplateFields(cfg, tpl) : '<section class="' + cardClass() + '"><div class="' + headClass() + '"><h2>' + esc(l("生物設定", "Species Setup")) + '</h2></div><div class="' + bodyClass() + '"><div class="emptyState"><h3>' + esc(l("未選定生物", "No species selected")) + '</h3></div></div></section>';
     return wrap(renderDemoToggle() + '<section class="' + cardClass() + ' setupDesigner"><div class="' + headClass() + '"><h2>' + esc(l("客戶設定", "Customer Settings")) + '</h2><span class="statusPill ' + (tpl ? "green" : "yellow") + '">' + dot(tpl ? "green" : "yellow") + esc(tpl ? templateLabel(tpl) : l("未選定", "Not selected")) + '</span></div><div class="' + bodyClass() + '"><div class="setupWorkspace">' +
       '<aside class="setupRail"><div class="step active"><b>1</b><span>' + esc(l("選產業", "Industry")) + '</span></div><div class="step ' + (cfg.industry ? "active" : "") + '"><b>2</b><span>' + esc(l("選生物", "Species")) + '</span></div><div class="step ' + (tpl ? "active" : "") + '"><b>3</b><span>' + esc(l("填場域", "Site details")) + '</span></div><div class="setupSummary"><strong>' + esc(l("可選生物", "Available")) + '</strong><span>' + totalTemplates + ' ' + esc(l("種", "items")) + '</span></div></aside>' +
-      '<section class="setupStage"><div class="stageTitle"><h3>' + esc(l("產業分類", "Industry")) + '</h3></div><select id="setupIndustry" class="hiddenSelect">' + localizedOptionHtml(industries, cfg.industry, l("未設定", "Not set")) + '</select><div class="choiceGrid">' + industryHtml + '</div></section>' +
-      '<section class="setupStage"><div class="stageTitle"><h3>' + esc(l("選生物", "Species")) + '</h3></div><select id="setupSpecies" class="hiddenSelect" ' + (selectedIndustry ? "" : "disabled") + '>' + (selectedIndustry ? localizedOptionHtml(species, cfg.species, l("未設定", "Not set")) : '<option value="">' + esc(l("未設定", "Not set")) + '</option>') + '</select><div class="templateGrid">' + templateHtml + '</div></section>' +
+      '<section class="setupStage"><div class="stageTitle"><h3>' + esc(l("產業分類", "Industry")) + '</h3></div><select id="setupIndustry" class="hiddenSelect" ' + (locked ? "disabled" : "") + '>' + localizedOptionHtml(industries, cfg.industry, l("未設定", "Not set")) + '</select><div class="choiceGrid">' + industryHtml + '</div></section>' +
+      '<section class="setupStage"><div class="stageTitle"><h3>' + esc(l("選生物", "Species")) + '</h3></div><select id="setupSpecies" class="hiddenSelect" ' + (selectedIndustry && !locked ? "" : "disabled") + '>' + (selectedIndustry ? localizedOptionHtml(species, cfg.species, l("未設定", "Not set")) : '<option value="">' + esc(l("未設定", "Not set")) + '</option>') + '</select><div class="templateGrid">' + templateHtml + '</div></section>' +
       '</div>' + templateFields + '</div></section>');
+  }
+  function mobileSettingsSection(title, html, open) {
+    if (!html) return "";
+    if (!isMobile()) return html;
+    return '<details class="mobileSettingsSection"' + (open ? ' open' : '') + '><summary>' + esc(title) + '</summary><div class="mobileSettingsSectionBody">' + html + '</div></details>';
   }
   function renderTemplateFields(cfg, tpl) {
     if (isConceptTemplate(tpl)) {
-      return '<section class="' + cardClass() + ' nestedClean"><div class="' + headClass() + '"><h2>' + esc(templateLabel(tpl)) + ' ' + esc(l("設備需求設定", "Sensor Requirement Settings")) + '</h2></div><div class="' + bodyClass() + ' stack">' + renderSensorRequirementPanel(cfg, tpl) + '<div class="buttonRow"><button class="actionButton primary" id="saveSiteConfig" data-template-enter="overview" type="button">' + esc(l("儲存設定", "Save Settings")) + '</button></div></div></section>';
+      return '<section class="' + cardClass() + ' nestedClean"><div class="' + headClass() + '"><h2>' + esc(templateLabel(tpl)) + ' ' + esc(l("\u8a2d\u5099\u9700\u6c42\u8a2d\u5b9a", "Sensor Requirement Settings")) + '</h2></div><div class="' + bodyClass() + ' stack">' + renderSensorRequirementPanel(cfg, tpl) + '<div class="buttonRow"><button class="actionButton primary" id="saveSiteConfig" data-template-enter="overview" type="button">' + esc(l("\u5132\u5b58\u8a2d\u5b9a", "Save Settings")) + '</button></div></div></section>';
     }
     var fields = tpl.siteFields.map(function (field) {
       var current = cfg[field.id] || "";
       var displayValue = current || (field.id === "breed" ? (tpl.defaultBreed || tpl.scientificName || "") : "");
+      if (field.id === "pondAreaM2") return renderPondAreaField(field, cfg);
       if (field.type === "select") {
-        return '<div class="field"><label>' + esc(isEn() && field.labelEn ? field.labelEn : field.label) + '</label><select id="site_' + esc(field.id) + '">' + localizedOptionHtml(localizedFieldOptions(field), displayValue, l("未設定", "Not set")) + '</select></div>';
+        return '<div class="field"><label>' + esc(isEn() && field.labelEn ? field.labelEn : field.label) + '</label><select id="site_' + esc(field.id) + '">' + localizedOptionHtml(localizedFieldOptions(field), displayValue, l("\u672a\u8a2d\u5b9a", "Not set")) + '</select></div>';
       }
-      return '<div class="field"><label>' + esc(isEn() && field.labelEn ? field.labelEn : field.label) + '</label><input id="site_' + esc(field.id) + '" type="' + esc(field.type || "text") + '" value="' + esc(displayValue) + '" placeholder="' + esc(l("未設定", "Not set")) + '"></div>';
+      return '<div class="field"><label>' + esc(isEn() && field.labelEn ? field.labelEn : field.label) + '</label><input id="site_' + esc(field.id) + '" type="' + esc(field.type || "text") + '" value="' + esc(displayValue) + '" placeholder="' + esc(l("\u672a\u8a2d\u5b9a", "Not set")) + '"></div>';
     }).join("");
-    return '<section class="' + cardClass() + ' nestedClean"><div class="' + headClass() + '"><h2>' + esc(templateLabel(tpl)) + ' ' + esc(l("場域設定", "Site Settings")) + '</h2></div><div class="' + bodyClass() + ' stack"><div class="grid2">' + fields + '</div><div id="cultureProgressPreview">' + renderCultureProgress(cfg, runtime()) + renderStockingDensityPreview(cfg) + '</div>' + renderSensorRequirementPanel(cfg, tpl) + renderCustomParameterSettings(cfg) + renderStandardSettings(cfg, tpl) + '<div class="buttonRow"><button class="actionButton primary" id="saveSiteConfig">' + esc(l("儲存設定", "Save Settings")) + '</button><button class="actionButton danger" id="clearPlatform">' + esc(l("清空設定", "Clear Settings")) + '</button></div></div></section>';
+    var basicFields = '<div class="grid2">' + fields + '</div><div id="cultureProgressPreview">' + (isHydroponicTemplate(tpl) ? renderHydroCultivationProgress() : renderCultureProgress(cfg, runtime()) + renderStockingDensityPreview(cfg)) + '</div>';
+    var sensorPanel = mobileSettingsSection(l("\u611f\u6e2c\u5668\u8a2d\u5099\u9700\u6c42", "Sensor Requirements"), renderSensorRequirementPanel(cfg, tpl), false);
+    var customPanel = mobileSettingsSection(l("\u81ea\u8a02\u611f\u6e2c\u5668\u53c3\u6578", "Custom Sensor Parameters"), renderCustomParameterSettings(cfg), false);
+    var standardPanel = mobileSettingsSection(l("\u53c3\u6578\u6a19\u6e96\u81ea\u8a02", "Parameter Standard Overrides"), renderStandardSettings(cfg, tpl), false);
+    var actions = '<div class="buttonRow settingsActionBar"><button class="actionButton primary" id="saveSiteConfig">' + esc(l("\u5132\u5b58\u8a2d\u5b9a", "Save Settings")) + '</button><button class="actionButton danger" id="clearPlatform">' + esc(l("\u6e05\u7a7a\u8a2d\u5b9a", "Clear Settings")) + '</button></div>';
+    return '<section class="' + cardClass() + ' nestedClean settingsPageCard"><div class="' + headClass() + '"><h2>' + esc(templateLabel(tpl)) + ' ' + esc(l("\u5834\u57df\u8a2d\u5b9a", "Site Settings")) + '</h2></div><div class="' + bodyClass() + ' stack">' + basicFields + sensorPanel + customPanel + standardPanel + actions + '</div></section>';
   }
   function mount(rootEl, page) {
     if (!rootEl) return;
+    startRuntimeAutoRefresh();
+    refreshRuntimeFromBackend();
     lastRoot = rootEl;
     if (!isMobile()) {
       var requestedPage = page || rootEl.dataset.page || "overview";
@@ -1761,12 +2558,17 @@
   });
   root.addEventListener("AIOT_RUNTIME_UPDATED", function () { mount(lastRoot, lastPage); });
   root.addEventListener("AIOT_CLIENT_CONFIG_UPDATED", function () {
+    runtimeLastFetchMs = 0;
     if (suppressNextConfigRemount) {
       suppressNextConfigRemount = false;
+      setTimeout(function () {
+        if (!isEditingSetupField()) refreshRuntimeFromBackend(true);
+      }, 250);
       return;
     }
     if (isEditingSetupField()) return;
     mount(lastRoot, lastPage);
+    refreshRuntimeFromBackend(true);
   });
   root.addEventListener("message", function (event) {
     if (!event || !event.data || event.data.type !== "AIOT_NAVIGATE") return;

@@ -9,7 +9,7 @@
       value: "",
       light: null,
       label: "",
-      ratio: { blue: 0, green: 0, yellow: 0, orange: 0, red: 0 },
+      ratio: { green: 0, yellow: 0, red: 0 },
       coverage: 0,
       isFresh: false,
       ageHours: null,

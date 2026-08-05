@@ -283,6 +283,8 @@ button { color: inherit; }
 }
 .field input, .field select, .field textarea {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 40px;
   border: 1px solid var(--line-soft);
   border-radius: 9px;
@@ -290,13 +292,32 @@ button { color: inherit; }
   color: var(--text);
   padding: 10px 12px;
 }
-.field input[type="date"]::-webkit-calendar-picker-indicator {
+.field input[type="date"],
+.field input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+.field input[type="date"]::-webkit-calendar-picker-indicator,
+.field input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 1;
+  width: 18px;
+  height: 18px;
+  filter: invert(74%) sepia(97%) saturate(407%) hue-rotate(155deg) brightness(108%) contrast(101%)
+    drop-shadow(0 0 4px rgba(85, 220, 255, .55));
+}
+.field input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.field input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  filter: invert(86%) sepia(58%) saturate(806%) hue-rotate(344deg) brightness(104%) contrast(103%)
+    drop-shadow(0 0 5px rgba(255, 209, 102, .72));
+}
+.standardRow input[type="time"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
   opacity: 1;
   filter: invert(74%) sepia(97%) saturate(407%) hue-rotate(155deg) brightness(108%) contrast(101%)
     drop-shadow(0 0 4px rgba(85, 220, 255, .55));
 }
-.field input[type="date"]::-webkit-calendar-picker-indicator:hover {
+.standardRow input[type="time"]::-webkit-calendar-picker-indicator:hover {
   filter: invert(86%) sepia(58%) saturate(806%) hue-rotate(344deg) brightness(104%) contrast(103%)
     drop-shadow(0 0 5px rgba(255, 209, 102, .72));
 }
@@ -312,6 +333,18 @@ button { color: inherit; }
 }
 .field textarea { min-height: 120px; resize: vertical; }
 .field input:disabled, .field select:disabled { color: #728895; }
+.pondAreaField {
+  min-width: 0;
+}
+.areaInputGroup {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 112px;
+  gap: 8px;
+}
+.areaInputGroup input,
+.areaInputGroup select {
+  min-width: 0;
+}
 .buttonRow { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
 .sectionTitle {
   display: grid;
@@ -462,6 +495,8 @@ button { color: inherit; }
 .standardParam summary {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
   gap: 12px;
   padding: 12px 14px;
   cursor: pointer;
@@ -473,16 +508,59 @@ button { color: inherit; }
 .standardParam summary span {
   color: var(--muted);
 }
+.standardParam summary > span {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  border: 1px solid rgba(43, 181, 255, .26);
+  border-radius: 999px;
+  padding: 4px 9px;
+  background: rgba(3, 20, 33, .52);
+  line-height: 1.25;
+}
+.standardSummaryMain {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.standardSummaryText {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.standardSummaryText span {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  border: 1px solid rgba(43, 181, 255, .24);
+  border-radius: 999px;
+  padding: 4px 9px;
+  color: var(--text);
+  background: rgba(3, 20, 33, .56);
+  font-size: 13px;
+}
+.standardSummaryText b {
+  color: var(--cyan);
+}
+.standardHelp {
+  padding: 10px 14px 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
 .standardRows {
   display: grid;
   gap: 10px;
-  padding: 0 14px 14px;
+  padding: 10px 14px 14px;
 }
 .standardRow {
   display: grid;
   grid-template-columns: minmax(120px, 1.2fr) repeat(2, minmax(94px, .8fr)) repeat(6, minmax(90px, 1fr));
   gap: 8px;
   align-items: end;
+}
+.standardRangeRow {
+  grid-template-columns: minmax(120px, .8fr) repeat(2, minmax(96px, .65fr)) repeat(3, minmax(180px, 1fr));
 }
 .standardRow label {
   display: grid;
@@ -491,7 +569,8 @@ button { color: inherit; }
   font-size: 13px;
   font-weight: 800;
 }
-.standardRow input {
+.standardRow input,
+.standardRow select {
   width: 100%;
   min-height: 36px;
   border: 1px solid var(--line-soft);
@@ -499,6 +578,36 @@ button { color: inherit; }
   background: #061827;
   color: var(--text);
   padding: 7px 8px;
+}
+.rangePair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  align-items: end;
+}
+.rangePair span {
+  grid-column: 1 / -1;
+  color: #9feaff;
+  font-size: 13px;
+  font-weight: 900;
+}
+.rangePair input {
+  min-width: 0;
+}
+.leafTempStandardRows {
+  padding-top: 12px;
+}
+.leafTempStandardRow {
+  grid-template-columns: minmax(160px, .7fr) repeat(3, minmax(210px, 1fr));
+}
+.leafTempStandardRow > input[type="hidden"] {
+  display: none;
+}
+.leafTempThreshold {
+  align-self: end;
+}
+.leafTempThreshold input:only-of-type {
+  grid-column: 1 / -1;
 }
 
 .setupHero {
@@ -676,15 +785,13 @@ button { color: inherit; }
 }
 .statusPill.green { border-color: var(--green); background: #103d2a; }
 .statusPill.yellow { border-color: var(--yellow); background: #42381b; }
-.statusPill.orange { border-color: var(--orange); background: #432b16; }
 .statusPill.red { border-color: var(--red); background: #3d1422; }
-.statusPill.cyan, .statusPill.blue { border-color: var(--blue); background: #102c43; }
-.dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; background: var(--blue); flex: 0 0 auto; }
+.statusPill.cyan { border-color: var(--green); background: #103621; }
+.dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; background: var(--green); flex: 0 0 auto; }
 .dot.green { background: var(--green); }
 .dot.yellow { background: var(--yellow); }
-.dot.orange { background: var(--orange); }
 .dot.red { background: var(--red); }
-.dot.cyan, .dot.blue { background: var(--blue); }
+.dot.cyan { background: var(--green); }
 .dot.none { background: #718997; }
 
 .progressTrack { position: relative; height: 16px; border: 2px solid var(--line); border-radius: 999px; overflow: hidden; background: #061827; }
@@ -764,10 +871,9 @@ button { color: inherit; }
   gap: 10px;
 }
 .decisionCard.yellow { border-color: var(--yellow); }
-.decisionCard.orange { border-color: var(--orange); }
 .decisionCard.red { border-color: var(--red); }
 .decisionCard.green { border-color: var(--green); }
-.decisionCard.cyan { border-color: var(--blue); }
+.decisionCard.cyan { border-color: var(--green); }
 .decisionMeta { color: var(--muted); font-size: 14px; line-height: 1.55; }
 .parameterAsidePanel .panelHeader h2,
 .parameterAsidePanel h2 {
@@ -888,13 +994,20 @@ th { color: var(--muted); font-weight: 500; }
   .deviceRow span:nth-child(2), .deviceRow span:nth-child(3) { color: var(--muted); }
 }
 
-.mobilePlatform { background: #07111f; }
-.mobileApp {
-  width: min(100%, 430px);
-  min-height: 100vh;
-  margin: 0 auto;
-  padding: 0 12px 88px;
+.mobilePlatform {
+  width: 100vw;
+  max-width: 100vw;
+  overflow-x: hidden;
   background: #07111f;
+}
+.mobileApp {
+  width: 100vw;
+  max-width: 100vw;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0 max(10px, env(safe-area-inset-left)) calc(88px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-right));
+  background: #07111f;
+  overflow-x: hidden;
 }
 .mobileHeader {
   position: sticky;
@@ -904,18 +1017,39 @@ th { color: var(--muted); font-weight: 500; }
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  margin: 0 -12px 12px;
-  padding: 14px 12px 10px;
+  margin: 0 -10px 12px;
+  padding: 14px max(10px, env(safe-area-inset-right)) 10px max(10px, env(safe-area-inset-left));
   border-bottom: 1px solid rgba(35, 95, 134, .85);
   background: rgba(7, 17, 31, .96);
   backdrop-filter: blur(10px);
 }
+.mobileHeader > * {
+  min-width: 0;
+}
+.mobilePlatform .mobileHeaderTools {
+  min-width: 0;
+  max-width: 58vw;
+}
+.mobilePlatform .languageSwitch {
+  max-width: 100%;
+}
+.mobilePlatform .languageSwitch select {
+  max-width: 100%;
+}
 .mobileHeader h1 { margin: 0; font-size: 20px; line-height: 1.2; }
 .mobileHeader p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
-.mobileMain { display: grid; gap: 12px; }
-.mobilePageGrid { display: grid; gap: 12px; }
+.mobileMain,
+.mobilePageGrid {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
 .mobileCard {
   min-width: 0;
+  max-width: 100%;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(11, 29, 47, .94);
@@ -985,11 +1119,13 @@ th { color: var(--muted); font-weight: 500; }
 .mobileOverviewDetail { display: grid; gap: 12px; }
 .mobileTabs {
   position: fixed;
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: 0;
   z-index: 50;
-  width: min(100%, 430px);
-  transform: translateX(-50%);
+  width: 100vw;
+  max-width: 100vw;
+  transform: none;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 4px;
@@ -1107,7 +1243,31 @@ th { color: var(--muted); font-weight: 500; }
 .mobilePlatform .deviceRow span:nth-child(3) { grid-column: 1 / -1; color: var(--muted); }
 .mobilePlatform .field input,
 .mobilePlatform .field select,
-.mobilePlatform .field textarea { min-height: 42px; font-size: 14px; }
+.mobilePlatform .field textarea {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.mobilePlatform .field,
+.mobilePlatform .mobileCardBody > *,
+.mobilePlatform .setupStage,
+.mobilePlatform .nestedClean {
+  min-width: 0;
+  max-width: 100%;
+}
+.mobilePlatform .field input[type="date"],
+.mobilePlatform .field input[type="time"] {
+  min-height: 48px;
+  padding: 10px 8px;
+}
+.mobilePlatform input[type="date"]::-webkit-date-and-time-value,
+.mobilePlatform input[type="time"]::-webkit-date-and-time-value {
+  text-align: left;
+  min-height: 1.35em;
+}
 .mobilePlatform .standardSettings { padding: 12px; }
 .mobilePlatform .sensorRequirementPanel { padding: 12px; }
 .mobilePlatform .sensorRequirementGrid { grid-template-columns: 1fr; }
@@ -1132,19 +1292,185 @@ th { color: var(--muted); font-weight: 500; }
 .mobilePlatform .standardTitleRow {
   grid-template-columns: 1fr;
 }
+.mobilePlatform .standardTitleRow.titleless {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 8px;
+}
 .mobilePlatform .standardTitleRow .actionButton {
   width: fit-content;
 }
 .mobilePlatform .standardParam summary { padding: 11px 12px; }
+.mobilePlatform .standardSummaryMain {
+  flex: 1 1 100%;
+}
+.mobilePlatform .standardParam summary > span {
+  margin-left: auto;
+}
+.mobileSettingsSection {
+  border: 1px solid rgba(53, 202, 255, .34);
+  border-radius: 8px;
+  background: rgba(7, 24, 39, .72);
+  overflow: hidden;
+}
+.mobileSettingsSection summary {
+  cursor: pointer;
+  padding: 13px 14px;
+  color: #8de6ff;
+  font-weight: 900;
+}
+.mobileSettingsSectionBody {
+  display: grid;
+  gap: 12px;
+  padding: 0 10px 10px;
+}
+.mobilePlatform .settingsPageCard {
+  padding-bottom: 24px;
+}
+.mobilePlatform .settingsActionBar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 8px;
+  border: 1px solid rgba(53, 202, 255, .26);
+  border-radius: 18px;
+  background: rgba(7, 17, 31, .92);
+}
+.mobilePlatform .settingsActionBar .actionButton {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+}
+.sensorRequirementItem {
+  border: 1px solid rgba(85, 220, 255, .28);
+  border-radius: 8px;
+  background: rgba(6, 24, 39, .72);
+  overflow: hidden;
+}
+.sensorRequirementItem summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  cursor: pointer;
+  color: #8de6ff;
+  font-weight: 900;
+}
+.sensorRequirementItem summary span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.sensorRequirementItem summary em {
+  flex: 0 0 auto;
+  font-style: normal;
+  white-space: nowrap;
+}
+.sensorRequirementItemBody {
+  padding: 0 10px 10px;
+}
+.mobilePlatform .sensorRequirementItem .sensorRequirementCard {
+  border-radius: 8px;
+  grid-template-columns: 86px minmax(0, 1fr);
+}
+.mobilePlatform .sensorRequirementItem .sensorPhoto {
+  width: 100%;
+  min-height: 86px;
+  justify-self: stretch;
+}
+@media (max-width: 390px) {
+  .mobilePlatform .areaInputGroup {
+    grid-template-columns: 1fr;
+  }
+}
 .mobilePlatform .standardRows { padding: 0 12px 12px; }
 .mobilePlatform .standardRow {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
+.mobilePlatform .standardRangeRow {
+  grid-template-columns: 1fr;
+}
 .mobilePlatform .customParamRow {
   grid-template-columns: 1fr;
 }
-.mobilePlatform .standardRow label:first-child {
+.mobilePlatform .standardRow label:first-child,
+.mobilePlatform .rangePair {
   grid-column: 1 / -1;
 }
 .mobilePlatform .notice,
 .mobilePlatform .emptyState { padding: 12px; }
+
+.ratioBlock.alertGlow,
+.parameterAsidePanel.alertGlow {
+  border-color: var(--yellow);
+  box-shadow: 0 0 0 1px rgba(255, 209, 102, .35), 0 0 24px rgba(255, 209, 102, .2);
+}
+.ratioBlock.alertGlow.red,
+.parameterAsidePanel.alertGlow.red {
+  border-color: var(--red);
+  box-shadow: 0 0 0 1px rgba(255, 91, 122, .42), 0 0 28px rgba(255, 91, 122, .25);
+}
+
+.parameterRatioHeader {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.parameterRatioTitle {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+.parameterRatioName {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.parameterRatioName strong {
+  color: var(--text);
+  font-size: 17px;
+  line-height: 1.35;
+}
+.paramScorePill {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: 34px;
+  padding: 6px 13px;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+.parameterRatioHeader .badge {
+  flex: 0 0 auto;
+}
+.ratioWindowSwitch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+.ratioWindowButton {
+  border: 1px solid rgba(43, 181, 255, .45);
+  background: rgba(3, 20, 33, .78);
+  color: var(--text);
+  border-radius: 999px;
+  min-height: 30px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.ratioWindowButton.active {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: 0 0 0 1px rgba(52, 216, 255, .18), 0 0 16px rgba(52, 216, 255, .16);
+}
+.ratioWindowButton:hover {
+  border-color: var(--cyan);
+}

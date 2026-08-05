@@ -3,8 +3,7 @@
 
   var CONFIG_KEY = "AIOT_CLIENT_CONFIG_V1";
   var CHANNEL_NAME = "AIOT_CLIENT_CONFIG_CHANNEL";
-  var API_PATH = root.AIOT_CLIENT_CONFIG_API_URL || "/api/client-config";
-  var CLIENT_ID = root.AIOT_CLIENT_ID || ((document.body && document.body.classList.contains("mobilePlatform")) ? "mobile" : "desktop");
+  var API_PATH = "/api/client-config";
   var syncChannel = null;
   var pendingServerWrite = false;
 
@@ -34,8 +33,7 @@
             { id: "plannedHarvestDate", label: "預估收成日", labelEn: "Planned harvest date", type: "date" },
             { id: "pondId", label: "池別 / 批次", labelEn: "Pond / batch", type: "text", placeholder: "C22" },
             { id: "stockingCount", label: "放養尾數", labelEn: "Stocking count", type: "number" },
-            { id: "pondAreaM2", label: "池面積 m2", labelEn: "Pond area m2", type: "number" },
-            { id: "waterVolumeM3", label: "水量 m3", labelEn: "Water volume m3", type: "number" }
+            { id: "pondAreaM2", label: "池面積 m2", labelEn: "Pond area m2", type: "number" }
           ],
           parameters: [
             { id: "DO", label: "DO 溶氧", labelEn: "DO", shortLabel: "DO", unit: "mg/L", ideal: "5.0 mg/L 以上", warning: "4.0-5.0 mg/L", danger: "低於 4.0 mg/L", weight: "55%" },
@@ -63,21 +61,19 @@
           ],
           standardProfiles: {
             DO: [
-              { label: "白天時段", start: "06:00", end: "18:00", idealMin: 5.0, idealMax: 7.0, warningMin: 4.0, warningMax: 5.0, dangerMin: 0, dangerMax: 4.0 },
-              { label: "夜間時段", start: "18:00", end: "06:00", idealMin: 5.5, idealMax: 7.0, warningMin: 4.5, warningMax: 5.5, dangerMin: 0, dangerMax: 4.5 }
+              { label: "全日時段", start: "00:00", end: "23:59", idealMin: 5.0, idealMax: 30, warningMin: 3.0, warningMax: 5.0, dangerMin: 0.0, dangerMax: 3.0 }
             ],
             pH: [
-              { label: "全日時段", start: "00:00", end: "23:59", idealMin: 7.5, idealMax: 8.5, warningMin: 7.0, warningMax: 9.0, dangerMin: 0, dangerMax: 7.0 }
+              { label: "全日時段", start: "00:00", end: "23:59", idealMin: 7.2, idealMax: 7.8, warningMin: 7.0, warningMax: 9.0, dangerMin: 0, dangerMax: 14 }
             ],
             orpMv: [
-              { label: "全日時段", start: "00:00", end: "23:59", idealMin: 300, idealMax: 450, warningMin: 250, warningMax: 300, dangerMin: 0, dangerMax: 250 }
+              { label: "全日時段", start: "00:00", end: "23:59", idealMin: 150, idealMax: 700, warningMin: 50, warningMax: 150, dangerMin: -500, dangerMax: 50 }
             ],
             salinityPpt: [
-              { label: "全日時段", start: "00:00", end: "23:59", idealMin: 15, idealMax: 25, warningMin: 10, warningMax: 30, dangerMin: 0, dangerMax: 10 }
+              { label: "全日時段", start: "00:00", end: "23:59", idealMin: 10, idealMax: 32, warningMin: 0.5, warningMax: 45, dangerMin: 0, dangerMax: 60 }
             ],
             waterTempC: [
-              { label: "白天時段", start: "06:00", end: "18:00", idealMin: 26, idealMax: 30, warningMin: 24, warningMax: 32, dangerMin: 0, dangerMax: 24 },
-              { label: "夜間時段", start: "18:00", end: "06:00", idealMin: 25, idealMax: 29, warningMin: 23, warningMax: 31, dangerMin: 0, dangerMax: 23 }
+              { label: "全日時段", start: "00:00", end: "23:59", idealMin: 28, idealMax: 32, warningMin: 18, warningMax: 35, dangerMin: 0, dangerMax: 42 }
             ]
           }
         }
@@ -99,8 +95,38 @@
           routes: [
             { id: "overview", label: "總覽", labelEn: "Overview" }
           ],
-          siteFields: [],
-          parameters: [],
+          siteFields: [
+            { id: "breed", label: "品種", labelEn: "Variety", type: "text", placeholder: "Romaine / Curly kale" },
+            { id: "cultureMode", label: "栽培系統", labelEn: "Cultivation system", type: "select", options: ["NFT", "DWC"], optionsEn: ["NFT", "DWC"] },
+            { id: "targetSpec", label: "作物", labelEn: "Crop", type: "select", options: ["萵苣", "羽衣甘藍"], optionsEn: ["Lettuce", "Kale"] },
+            { id: "stockingDate", label: "定植日", labelEn: "Transplant date", type: "date" },
+            { id: "plannedHarvestDate", label: "預估收成日", labelEn: "Planned harvest date", type: "date" },
+            { id: "pondId", label: "場域 / 批次", labelEn: "Site / batch", type: "text", placeholder: "GREENHOUSE-A / BATCH-01" },
+            { id: "stockingCount", label: "栽培區數", labelEn: "Zone count", type: "number" },
+            { id: "pondAreaM2", label: "床面積 m2", labelEn: "Bed area m2", type: "number" }
+          ],
+          parameters: [
+            { id: "EC", label: "EC 營養液濃度", labelEn: "EC", shortLabel: "EC", unit: "mS/cm", ideal: "目前依系統栽培標準判定", warning: "目前依系統栽培標準判定", danger: "硬性安全規則不可覆蓋", weight: "RHI" },
+            { id: "pH", label: "pH 酸鹼值", labelEn: "pH", shortLabel: "pH", unit: "", ideal: "目前依系統栽培標準判定", warning: "目前依系統栽培標準判定", danger: "酸/鹼互斥與混合等待不可覆蓋", weight: "RHI" },
+            { id: "DO", label: "DO 溶氧", labelEn: "DO", shortLabel: "DO", unit: "mg/L", ideal: "目前依系統栽培標準判定", warning: "目前依系統栽培標準判定", danger: "DO 不安全時阻擋加肥與增光", weight: "RHI" },
+            { id: "waterTempC", label: "液溫", labelEn: "Nutrient Temp", shortLabel: "液溫", unit: "C", ideal: "目前依系統栽培標準判定", warning: "目前依系統栽培標準判定", danger: "高液溫放大根腐與低 DO 風險", weight: "RHI" },
+            { id: "airTempC", label: "空溫", labelEn: "Air Temp", shortLabel: "空溫", unit: "C", ideal: "目前依系統栽培標準判定", warning: "目前依系統栽培標準判定", danger: "熱逆境與補光安全鎖", weight: "PMI" },
+            { id: "humidityPct", label: "RH 相對濕度", labelEn: "RH", shortLabel: "RH", unit: "%", ideal: "目前依系統栽培標準判定", warning: "目前依系統栽培標準判定", danger: "高濕與灰黴風險", weight: "PMI" },
+            { id: "VPD", label: "VPD 蒸散壓差", labelEn: "VPD", shortLabel: "VPD", unit: "kPa", ideal: "由溫濕度換算", warning: "實體 VPD 感測器只作選配驗證", danger: "缺溫濕度時顯示資料不足", weight: "PMI" },
+            { id: "DLI", label: "DLI 光積量", labelEn: "DLI", shortLabel: "DLI", unit: "mol/m2/d", ideal: "目前依系統栽培標準判定", warning: "目前依系統栽培標準判定", danger: "補光前需檢查 VPD、葉溫、DO、液溫", weight: "DLI_CR" },
+            { id: "CO2", label: "CO2", labelEn: "CO2", shortLabel: "CO2", unit: "ppm", ideal: "目前依系統栽培標準判定", warning: "通風狀態需同步檢查", danger: "通風開啟時不可加 CO2", weight: "PMI" },
+            { id: "leafTempC", label: "葉溫人工量測", labelEn: "Leaf Temp Task", shortLabel: "葉溫", unit: "C", ideal: "人工/手持量測任務", warning: "過期只提示待量測", danger: "缺值時阻擋高信心補光", weight: "PMI" }
+          ],
+          customParameterPresets: [
+            { id: "nitrateN", label: "硝酸態氮 N", labelEn: "Nitrate N", unit: "mg/L", weight: "未來診斷" },
+            { id: "phosphateP", label: "磷 P", labelEn: "Phosphate P", unit: "mg/L", weight: "未來診斷" },
+            { id: "potassiumK", label: "鉀 K", labelEn: "Potassium K", unit: "mg/L", weight: "未來診斷" },
+            { id: "leafWetness", label: "葉面濕度", labelEn: "Leaf Wetness", unit: "%", weight: "警報" },
+            { id: "substrateMoisture", label: "基質含水率", labelEn: "Substrate Moisture", unit: "%", weight: "未來保留" },
+            { id: "returnFlowEc", label: "回液 EC", labelEn: "Return Flow EC", unit: "mS/cm", weight: "診斷" },
+            { id: "airPressureHpa", label: "氣壓", labelEn: "Air Pressure", unit: "hPa", weight: "警報" },
+            { id: "outsideAirTempRh", label: "外氣溫濕度", labelEn: "Outside Temp/RH", unit: "C / %", weight: "診斷" }
+          ],
           sensorRequirements: [
             { id: "hydro-ec", parameterId: "EC", requirement: "required", label: "EC 營養液感測器", labelEn: "EC Sensor", unit: "mS/cm", productImageUrl: "../assets/sensors/水質感測器.png", productName: "JNC EC 感測器", productNameEn: "JNC EC Sensor", description: "監控營養液濃度與肥培穩定度。", descriptionEn: "Monitors nutrient strength and fertigation stability." },
             { id: "hydro-ph", parameterId: "pH", requirement: "required", label: "pH 酸鹼值感測器", labelEn: "pH Sensor", unit: "", productImageUrl: "../assets/sensors/水質感測器.png", productName: "JNC pH 感測器", productNameEn: "JNC pH Sensor", description: "監控營養液酸鹼與吸收風險。", descriptionEn: "Monitors nutrient-solution acidity and uptake risk." },
@@ -113,13 +139,46 @@
             { id: "hydro-vpd", parameterId: "VPD", requirement: "optional", sensorInstalled: false, label: "VPD 感測器/計算參數", labelEn: "VPD Sensor / Derived Parameter", unit: "kPa", productImageUrl: "../assets/sensors/戶外氣體感測器OA4.png", productName: "JNC VPD 模組", productNameEn: "JNC VPD Module", description: "選配，整合溫濕度推估蒸散壓力。", descriptionEn: "Optional module deriving transpiration pressure from temperature and humidity." },
             { id: "hydro-camera", parameterId: "vision", requirement: "required", sensorInstalled: false, label: "影像鏡頭", labelEn: "Vision Camera", unit: "", productImageUrl: "../assets/sensors/雲端環境影像攝影機.png", productName: "JNC 影像模組", productNameEn: "JNC Vision Module", description: "必配，支援葉燒、黃化、根區與生長影像判讀。", descriptionEn: "Required input for tipburn, yellowing, root-zone, and growth-image assessment." },
             { id: "hydro-level", parameterId: "waterLevel", requirement: "optional", sensorInstalled: false, label: "液位 / 水位感測器", labelEn: "Liquid Level Sensor", unit: "cm", productImageUrl: "", productName: "JNC 液位感測器", productNameEn: "JNC Liquid Level Sensor", description: "選配，監控水位與循環異常。", descriptionEn: "Optional input for water level and circulation anomalies." }
-          ]
+          ],
+          standardProfiles: {
+            EC: [
+              { label: "全日時段", start: "00:00", end: "23:59", idealMin: "", idealMax: "", warningMin: "", warningMax: "", dangerMin: "", dangerMax: "" }
+            ],
+            pH: [
+              { label: "全日時段", start: "00:00", end: "23:59", idealMin: "", idealMax: "", warningMin: "", warningMax: "", dangerMin: "", dangerMax: "" }
+            ],
+            DO: [
+              { label: "全日時段", start: "00:00", end: "23:59", idealMin: "", idealMax: "", warningMin: "", warningMax: "", dangerMin: "", dangerMax: "" }
+            ],
+            waterTempC: [
+              { label: "全日時段", start: "00:00", end: "23:59", idealMin: "", idealMax: "", warningMin: "", warningMax: "", dangerMin: "", dangerMax: "" }
+            ],
+            airTempC: [
+              { label: "日間", start: "06:00", end: "18:00", idealMin: "", idealMax: "", warningMin: "", warningMax: "", dangerMin: "", dangerMax: "" },
+              { label: "夜間", start: "18:00", end: "06:00", idealMin: "", idealMax: "", warningMin: "", warningMax: "", dangerMin: "", dangerMax: "" }
+            ],
+            humidityPct: [
+              { label: "全日時段", start: "00:00", end: "23:59", idealMin: "", idealMax: "", warningMin: "", warningMax: "", dangerMin: "", dangerMax: "" }
+            ],
+            VPD: [
+              { label: "全日時段", start: "00:00", end: "23:59", idealMin: "", idealMax: "", warningMin: "", warningMax: "", dangerMin: "", dangerMax: "" }
+            ],
+            DLI: [
+              { label: "全日時段", start: "00:00", end: "23:59", idealMin: "", idealMax: "", warningMin: "", warningMax: "", dangerMin: "", dangerMax: "" }
+            ],
+            CO2: [
+              { label: "日間", start: "06:00", end: "18:00", idealMin: "", idealMax: "", warningMin: "", warningMax: "", dangerMin: "", dangerMax: "" }
+            ],
+            leafTempC: [
+              { label: "補光前量測", start: "10:30", end: "14:30", idealMin: "", idealMax: "", warningMin: "", warningMax: "", dangerMin: "", dangerMax: "" }
+            ]
+          }
         }
       }
     }
   };
 
-  var SITE_FIELD_IDS = ["industry", "species", "breed", "cultureMode", "targetSpec", "stockingDate", "plannedHarvestDate", "pondId", "stockingCount", "pondAreaM2", "waterVolumeM3", "stockingDensityPerM2", "targetSpecUnit", "targetCountPerLbMin", "targetCountPerLbMax", "targetWeightGMin", "targetWeightGMax", "targetWeightGMid"];
+  var SITE_FIELD_IDS = ["industry", "species", "breed", "cultureMode", "targetSpec", "stockingDate", "plannedHarvestDate", "pondId", "stockingCount", "pondAreaM2", "pondAreaValue", "pondAreaUnit", "waterVolumeM3", "stockingDensityPerM2", "targetSpecUnit", "targetCountPerLbMin", "targetCountPerLbMax", "targetWeightGMin", "targetWeightGMax", "targetWeightGMid"];
   var PARAM_FIELD_IDS = ["paramId", "sensorInstalled", "standardSource", "idealRange", "warningRange", "dangerRange", "weight", "idealApply", "warningApply", "dangerApply", "weightApply", "ratioWindow", "yellowPct", "redPct"];
   var DECISION_FIELD_IDS = ["decisionTrigger", "decisionAction", "executionMode", "approvalRole", "deviceChannels"];
 
@@ -129,23 +188,6 @@
     } catch (error) {
       return {};
     }
-  }
-
-  function updatedAtValue(config) {
-    var time = config && config.updatedAt ? Date.parse(config.updatedAt) : 0;
-    return Number.isNaN(time) ? 0 : time;
-  }
-
-  function normalizeConfigPayload(payload, fallback) {
-    var config = payload && payload.config && typeof payload.config === "object" ? payload.config : (payload && typeof payload === "object" ? payload : fallback || {});
-    if (payload && payload.updatedAt && !config.updatedAt) config.updatedAt = payload.updatedAt;
-    if (payload && payload.updatedBy && !config.updatedBy) config.updatedBy = payload.updatedBy;
-    return config || {};
-  }
-
-  function storeConfig(next, source) {
-    root.localStorage.setItem(CONFIG_KEY, JSON.stringify(next || {}));
-    emitConfigUpdated(next || {}, source);
   }
 
   function emitConfigUpdated(next, source) {
@@ -162,7 +204,7 @@
       return root.fetch(API_PATH, {
         method: "PUT",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ config: next || {}, updatedAt: (next || {}).updatedAt, updatedBy: CLIENT_ID })
+        body: JSON.stringify({ config: next || {} })
       }).then(function (response) { return response.ok ? response.json() : { ok: false }; }).catch(function () { return { ok: false }; });
     } catch (error) {
       return Promise.resolve({ ok: false });
@@ -175,10 +217,11 @@
     return root.fetch(API_PATH, { cache: "no-store" })
       .then(function (response) { return response.ok ? response.json() : { config: loadConfig() }; })
       .then(function (payload) {
-        var next = normalizeConfigPayload(payload, {});
+        var next = payload && payload.config && typeof payload.config === "object" ? payload.config : {};
         var current = loadConfig();
-        if (updatedAtValue(next) >= updatedAtValue(current) && JSON.stringify(current || {}) !== JSON.stringify(next || {})) {
-          storeConfig(next, "server");
+        if (JSON.stringify(current || {}) !== JSON.stringify(next || {})) {
+          root.localStorage.setItem(CONFIG_KEY, JSON.stringify(next));
+          emitConfigUpdated(next, "server");
         }
         return next;
       })
@@ -186,8 +229,9 @@
   }
 
   function saveConfig(partial) {
-    var next = Object.assign({}, loadConfig(), partial || {}, { updatedAt: new Date().toISOString(), updatedBy: CLIENT_ID });
-    storeConfig(next, "local");
+    var next = Object.assign({}, loadConfig(), partial || {}, { updatedAt: new Date().toISOString() });
+    root.localStorage.setItem(CONFIG_KEY, JSON.stringify(next));
+    emitConfigUpdated(next, "local");
     pendingServerWrite = true;
     pushConfigToServer(next).then(function () {
       pendingServerWrite = false;
@@ -211,16 +255,18 @@
         if (/^(AIOT_|JNC_|WHITE_SHRIMP_|runtime|mockup)/i.test(key)) store.removeItem(key);
       });
     });
-    storeConfig({ updatedAt: new Date().toISOString(), updatedBy: CLIENT_ID }, "local");
+    root.localStorage.setItem(CONFIG_KEY, "{}");
+    emitConfigUpdated({}, "local");
     pendingServerWrite = true;
-    pushConfigToServer(loadConfig()).then(function () { pendingServerWrite = false; });
+    pushConfigToServer({}).then(function () { pendingServerWrite = false; });
   }
 
   if (syncChannel) {
     syncChannel.onmessage = function (event) {
       var next = event.data && event.data.type === "client-config" ? event.data.config : null;
       if (!next || typeof next !== "object") return;
-      if (updatedAtValue(next) >= updatedAtValue(loadConfig())) storeConfig(next, "channel");
+      root.localStorage.setItem(CONFIG_KEY, JSON.stringify(next));
+      emitConfigUpdated(next, "channel");
     };
   }
 
@@ -262,7 +308,6 @@
     saveConfig: saveConfig,
     syncConfigFromServer: syncConfigFromServer,
     pushConfigToServer: pushConfigToServer,
-    clientConfigApiUrl: API_PATH,
     currentTemplate: currentTemplate,
     isTemplateSelected: isTemplateSelected,
     clearPlatformState: clearPlatformState,
